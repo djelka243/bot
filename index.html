@@ -39,7 +39,6 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .login-title { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 6px; letter-spacing: -0.5px; }
 .login-sub { font-size: 14px; color: var(--sub); text-align: center; margin-bottom: 32px; }
 
-/* Onglets Formulaires */
 .tab-switcher { display: flex; background: var(--input-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 20px; }
 .tab-sw-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; background: none; color: var(--sub); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .tab-sw-btn.active { background: var(--accent-gradient); color: #fff; box-shadow: 0 4px 15px rgba(108,99,255,0.25); }
@@ -47,7 +46,6 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .form-section { display: none; }
 .form-section.active { display: block; }
 
-/* Formulaires */
 .field { margin-bottom: 16px; }
 .field label { display: block; font-size: 11px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
 .field input, .field textarea, .field select { width: 100%; padding: 12px 14px; background: var(--input-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 15px; outline: none; transition: all 0.2s; }
@@ -55,11 +53,9 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .field textarea { min-height: 80px; resize: none; }
 .field .hint { font-size: 12px; color: var(--sub); margin-top: 6px; opacity: 0.8; }
 
-/* Boutons */
 .btn-primary { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--accent-gradient); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(108,99,255,0.3); display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
 .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
 
-/* Topbar & Navigation */
 .topbar { padding: 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); background: var(--bg2); }
 .topbar-avatar { width: 42px; height: 42px; border-radius: 14px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 20px; }
 .topbar-info { flex: 1; min-width: 0; }
@@ -79,28 +75,27 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
 .page-sub { font-size: 13px; color: var(--sub); }
 
-/* Cartes & Listes */
 .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
 .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
 .stat-card { background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; display: flex; flex-direction: column; gap: 4px; }
 .stat-num { font-size: 28px; font-weight: 800; color: var(--accent2); }
 .stat-lbl { font-size: 12px; color: var(--sub); font-weight: 500; }
 
-.list-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.list-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.1s; }
+.list-item:active { background: rgba(255,255,255,0.02); }
 .list-item:last-child { border-bottom: none; }
 .item-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.1); }
 .item-info { flex: 1; min-width: 0; }
 .item-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
-.item-meta { font-size: 13px; color: var(--sub); display: flex; align-items: center; gap: 6px; }
+.item-meta { font-size: 12px; color: var(--sub); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
-.item-actions { display: flex; gap: 8px; }
+.item-actions { display: flex; gap: 8px; z-index: 2; }
 .icon-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid transparent; background: rgba(255,255,255,0.04); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
 .icon-btn.edit { color: var(--accent2); border-color: rgba(108,99,255,0.2); }
 .icon-btn.edit:active { background: rgba(108,99,255,0.15); }
 .icon-btn.del { color: var(--danger); border-color: rgba(239,68,68,0.2); }
 .icon-btn.del:active { background: rgba(239,68,68,0.15); }
 
-/* Profil */
 .profile-hero { background: linear-gradient(135deg, rgba(108,99,255,0.1) 0%, rgba(139,92,246,0.03) 100%); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 16px; }
 .profile-avatar { width: 70px; height: 70px; border-radius: 22px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 14px; box-shadow: 0 8px 25px rgba(108,99,255,0.2); }
 .profile-name { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
@@ -116,7 +111,6 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .info-cell .lbl { font-size: 11px; color: var(--sub); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
 .info-cell .val { font-size: 15px; font-weight: 600; }
 
-/* Modales moderne de type Bottom Sheet */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; backdrop-filter: blur(5px); }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 .modal { background: #121218; border-top: 1px solid var(--border); border-radius: 24px 24px 0 0; width: 100%; padding: 20px 20px 32px; max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); }
@@ -128,7 +122,6 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 .btn-danger:active { background: rgba(239,68,68,0.15); }
 .btn-cancel { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent; color: var(--sub); font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
 
-/* Floating Action Button */
 .fab { position: sticky; bottom: 0; display: flex; justify-content: flex-end; padding-top: 10px; pointer-events: none; }
 .fab-btn { pointer-events: auto; background: var(--accent-gradient); color: #fff; border: none; border-radius: 14px; padding: 12px 20px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(108,99,255,0.4); transition: transform 0.2s; }
 .fab-btn:active { transform: scale(0.95); }
@@ -151,7 +144,7 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 <!-- ÉCRAN CONNEXION / INSCRIPTION -->
 <div class="screen" id="screen-login">
   <div class="login-box">
-    <div class="login-logo">🏪</div>
+    <div class="login-logo"><img src="./logo.png" alt="logo"></div>
     <div class="login-title">Bot Vendeur</div>
     <div class="login-sub">Gérez votre catalogue en direct sur Telegram</div>
     <div class="tab-switcher">
@@ -235,14 +228,14 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
   </div>
 </div>
 
-<!-- MODALE TECHNIQUE UNIQUE POUR LES FORMULAIRES CRUD -->
+<!-- MODALE UNIQUE POUR CRUD ET DÉTAILS -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-title">Action</div>
     <div id="modal-body"></div>
-    <button class="btn-primary" id="modal-ok">Enregistrer les modifications</button>
-    <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+    <button class="btn-primary" id="modal-ok" style="display: none;">Enregistrer</button>
+    <button class="btn-cancel" onclick="closeModal()">Fermer</button>
   </div>
 </div>
 
@@ -257,9 +250,10 @@ if (tg) { tg.ready(); tg.expand(); }
 const chatId = tg?.initDataUnsafe?.user?.id?.toString() || 'test_123456';
 
 let profile = null;
-let categories = [];
-let produits = [];
+let categories = [];   // tableau d'objets { nom }
+let produits = [];     // tableau d'objets { nom, prix, description, taille } (pas d'id)
 
+// --- Utilitaires ---
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -276,8 +270,26 @@ function escHtml(s) {
   return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Fonction de communication API nettoyée et robuste face aux formats de listes renvoyés par n8n
-async function api(action, payload={}) {
+// Normalise une réponse pour extraire un tableau (gère les formats courants de n8n)
+function normalizeArray(data) {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object') {
+    // Propriétés possibles : data, rows, results, categories, products, etc.
+    if (Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data.rows)) return data.rows;
+    if (Array.isArray(data.results)) return data.results;
+    if (Array.isArray(data.categories)) return data.categories;
+    if (Array.isArray(data.products)) return data.products;
+    // Sinon, essayer la première valeur qui est un tableau
+    for (let key in data) {
+      if (Array.isArray(data[key])) return data[key];
+    }
+  }
+  return [];
+}
+
+// API générique
+async function api(action, payload = {}) {
   try {
     const res = await fetch(N8N_WEBHOOK, {
       method: 'POST',
@@ -285,10 +297,11 @@ async function api(action, payload={}) {
       body: JSON.stringify({ chatId, action, ...payload })
     });
     const data = await res.json();
+    console.log(`[API ${action}] réponse:`, data);
     return data;
   } catch(e) {
-    console.error(`[API ${action}] Erreur :`, e);
-    return { error: 'Erreur de connexion' };
+    console.error(`[API ${action}] erreur:`, e);
+    return { error: 'Erreur réseau' };
   }
 }
 
@@ -348,7 +361,6 @@ async function sInscrire() {
   }
 }
 
-// L'ordre d'appel a été inversé pour s'assurer que les tableaux soient pleins avant de monter le profil
 async function initMainScreen() {
   showScreen('screen-main');
   loader(true);
@@ -368,14 +380,13 @@ async function seDeconnecter() {
   toast('👋 À bientôt !');
 }
 
-/* === CRUD : PROFIL === */
+// --- PROFIL ---
 async function chargerProfil() {
   const d = await api('get_profile');
-  const prof = d?.profile || d;
-  if (!prof || prof.error || !prof.nom_boutique) return;
-  profile = prof;
+  if (!d || d.error || !d.nom_boutique) return;
+  profile = d;
   
-  document.getElementById('topbar-shop').textContent = prof.nom_boutique;
+  document.getElementById('topbar-shop').textContent = d.nom_boutique;
   
   const statusMap = {
     'en_attente': { cls:'pending', txt:'⏳ En attente' },
@@ -384,14 +395,14 @@ async function chargerProfil() {
     'rejeté': { cls:'rejected', txt:'❌ Bloqué' },
     'rejete': { cls:'rejected', txt:'❌ Bloqué' }
   };
-  const st = statusMap[(prof.statut||'').toLowerCase()] || { cls:'pending', txt:'⏳ En attente' };
+  const st = statusMap[(d.statut||'').toLowerCase()] || { cls:'pending', txt:'⏳ En attente' };
   document.getElementById('topbar-status').innerHTML = `<span class="badge ${st.cls}" style="margin:0; padding:2px 8px; font-size:11px">${st.txt}</span>`;
   
   document.getElementById('profil-content').innerHTML = `
     <div class="profile-hero">
       <div class="profile-avatar">🏪</div>
-      <div class="profile-name">${escHtml(prof.nom_boutique)}</div>
-      <div class="profile-desc">${escHtml(prof.description || 'Aucune description enregistrée.')}</div>
+      <div class="profile-name">${escHtml(d.nom_boutique)}</div>
+      <div class="profile-desc">${escHtml(d.description || 'Aucune description enregistrée.')}</div>
       <span class="badge ${st.cls}">${st.txt}</span>
     </div>
     <div class="stats-row">
@@ -399,39 +410,52 @@ async function chargerProfil() {
       <div class="stat-card"><div class="stat-num">${produits.length}</div><div class="stat-lbl">Produits Actifs</div></div>
     </div>
     <div class="info-grid">
-      <div class="info-cell"><div class="lbl">📞 Téléphone</div><div class="val">${escHtml(prof.telephone || '-')}</div></div>
-      <div class="info-cell"><div class="lbl">📍 Adresse</div><div class="val">${escHtml(prof.adresse || '-')}</div></div>
+      <div class="info-cell"><div class="lbl">📞 Téléphone</div><div class="val">${escHtml(d.telephone || '-')}</div></div>
+      <div class="info-cell"><div class="lbl">📍 Adresse</div><div class="val">${escHtml(d.adresse || '-')}</div></div>
     </div>
   `;
 }
 
-/* === CRUD : CATÉGORIES === */
+// --- CATÉGORIES ---
 async function chargerCategories() {
   const r = await api('list_categories');
-  // Supporte les tableaux directs renvoyés par n8n ou encapsulés
-  categories = Array.isArray(r) ? r : (r?.categories || []);
+  categories = normalizeArray(r);
+  // S'assurer que chaque catégorie a un champ 'nom'
+  categories = categories.filter(c => c && c.nom).map(c => ({ nom: c.nom }));
   
   document.getElementById('cat-count').textContent = categories.length + (categories.length > 1 ? ' catégories' : ' catégorie');
   
   const el = document.getElementById('liste-categories');
   if (!categories.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">Aucune catégorie enregistrée.<br>Commencez en créant une !</div></div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">Aucune catégorie.<br>Créez-en une avec le bouton +</div></div>`;
     return;
   }
   
   el.innerHTML = categories.map(c => `
-    <div class="list-item">
+    <div class="list-item" onclick="viewCategory('${escHtml(c.nom)}')">
       <div class="item-icon">🗂️</div>
       <div class="item-info">
         <div class="item-name">${escHtml(c.nom)}</div>
-        <div class="item-meta">${produits.filter(p => parseInt(p.categorie_id) === parseInt(c.id)).length} produit(s)</div>
+        <div class="item-meta">${produits.filter(p => p.categorie_nom === c.nom).length} produit(s)</div>
       </div>
-      <div class="item-actions">
-        <button class="icon-btn edit" onclick="openEditCategory(${c.id}, '${escHtml(c.nom)}')">✏️</button>
-        <button class="icon-btn del" onclick="openDeleteCategory(${c.id}, '${escHtml(c.nom)}')">🗑️</button>
+      <div class="item-actions" onclick="event.stopPropagation()">
+        <button class="icon-btn edit" onclick="openEditCategory('${escHtml(c.nom)}')">✏️</button>
+        <button class="icon-btn del" onclick="openDeleteCategory('${escHtml(c.nom)}')">🗑️</button>
       </div>
     </div>
   `).join('');
+}
+
+function viewCategory(nom) {
+  document.getElementById('modal-title').innerHTML = `🗂️ Détail : ${escHtml(nom)}`;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="padding: 8px 0">
+      <p><strong>Nom :</strong> ${escHtml(nom)}</p>
+      <p><strong>Produits associés :</strong> ${produits.filter(p => p.categorie_nom === nom).length}</p>
+    </div>
+  `;
+  document.getElementById('modal-ok').style.display = 'none';
+  document.getElementById('modal').classList.add('open');
 }
 
 function openAddCategory() {
@@ -439,6 +463,9 @@ function openAddCategory() {
   document.getElementById('modal-body').innerHTML = `
     <div class="field"><label>Nom de la catégorie *</label><input type="text" id="m-cat-nom" placeholder="Ex: Beauté, Électronique"></div>
   `;
+  document.getElementById('modal-ok').style.display = 'block';
+  document.getElementById('modal-ok').className = 'btn-primary';
+  document.getElementById('modal-ok').textContent = 'Créer';
   document.getElementById('modal-ok').onclick = async () => {
     const nom = document.getElementById('m-cat-nom').value.trim();
     if (!nom) { toast('⚠️ Le nom est requis'); return; }
@@ -450,154 +477,171 @@ function openAddCategory() {
   document.getElementById('modal').classList.add('open');
 }
 
-function openEditCategory(id, nomActuel) {
+function openEditCategory(oldNom) {
   document.getElementById('modal-title').innerHTML = '✏️ Éditer la catégorie';
   document.getElementById('modal-body').innerHTML = `
-    <div class="field"><label>Nom de la catégorie *</label><input type="text" id="m-cat-nom" value="${escHtml(nomActuel)}"></div>
+    <div class="field"><label>Nouveau nom *</label><input type="text" id="m-cat-nom" value="${escHtml(oldNom)}"></div>
   `;
+  document.getElementById('modal-ok').style.display = 'block';
+  document.getElementById('modal-ok').className = 'btn-primary';
+  document.getElementById('modal-ok').textContent = 'Renommer';
   document.getElementById('modal-ok').onclick = async () => {
-    const nom = document.getElementById('m-cat-nom').value.trim();
-    if (!nom) { toast('⚠️ Le nom ne peut pas être vide'); return; }
+    const newNom = document.getElementById('m-cat-nom').value.trim();
+    if (!newNom) { toast('⚠️ Le nom ne peut pas être vide'); return; }
     loader(true); closeModal();
-    const r = await api('update_category', { id, nom });
+    const r = await api('update_category', { oldNom, newNom });
     if (r && r.success) { toast('✅ Catégorie mise à jour'); await initMainScreen(); }
     else { toast(r?.error || '⚠️ Erreur'); loader(false); }
   };
   document.getElementById('modal').classList.add('open');
 }
 
-function openDeleteCategory(id, nom) {
+function openDeleteCategory(nom) {
   document.getElementById('modal-title').innerHTML = '🗑️ Supprimer la catégorie';
-  document.getElementById('modal-body').innerHTML = `<p style="color:var(--sub); line-height:1.5">Êtes-vous sûr de vouloir supprimer la catégorie <strong>${escHtml(nom)}</strong> ? Cela ne supprimera pas vos produits associés.</p>`;
+  document.getElementById('modal-body').innerHTML = `<p style="color:var(--sub); line-height:1.5">Supprimer la catégorie <strong>${escHtml(nom)}</strong> ? Les produits ne seront pas supprimés.</p>`;
+  document.getElementById('modal-ok').style.display = 'block';
   document.getElementById('modal-ok').className = 'btn-danger';
-  document.getElementById('modal-ok').textContent = '🗑️ Supprimer définitivement';
+  document.getElementById('modal-ok').textContent = '🗑️ Supprimer';
   document.getElementById('modal-ok').onclick = async () => {
     loader(true); closeModal();
-    const r = await api('delete_category', { id });
+    const r = await api('delete_category', { nom });
     if (r && r.success) { toast('🗑️ Catégorie supprimée'); await initMainScreen(); }
     else { toast(r?.error || '⚠️ Erreur'); loader(false); }
   };
   document.getElementById('modal').classList.add('open');
 }
 
-
-/* === CRUD : PRODUITS === */
+// --- PRODUITS ---
 async function chargerProduits() {
   const r = await api('list_products');
-  produits = Array.isArray(r) ? r : (r?.products || []);
+  produits = normalizeArray(r);
+  // Chaque produit doit avoir nom, prix, description, taille, et on ajoute categorie_nom si possible
+  // Ici on suppose que le backend renvoie la catégorie associée (via jointure)
+  produits = produits.filter(p => p && p.nom);
   
   document.getElementById('prod-count').textContent = produits.length + (produits.length > 1 ? ' produits' : ' produit');
   
   const el = document.getElementById('liste-produits');
   if (!produits.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Aucun produit dans votre boutique.<br>Appuyez sur le bouton + pour commencer.</div></div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Aucun produit.<br>Appuyez sur + pour ajouter.</div></div>`;
     return;
   }
   
   el.innerHTML = produits.map(p => `
-    <div class="list-item">
+    <div class="list-item" onclick="viewProduct('${escHtml(p.nom)}')">
       <div class="item-icon">📦</div>
       <div class="item-info">
         <div class="item-name">${escHtml(p.nom)}</div>
         <div class="item-meta">
           <span style="color:var(--accent2); font-weight:700">${parseFloat(p.prix || 0).toFixed(2)} $</span>
-          ${p.taille ? '• <span>' + escHtml(p.taille) + '</span>' : ''}
-          ${p.categorie_nom ? '• <span style="opacity:0.6">' + escHtml(p.categorie_nom) + '</span>' : ''}
+          ${p.taille ? '• ' + escHtml(p.taille) : ''}
+          ${p.categorie_nom ? '• ' + escHtml(p.categorie_nom) : ''}
         </div>
       </div>
-      <div class="item-actions">
-        <button class="icon-btn edit" onclick="openEditProduct(${p.id})">✏️</button>
-        <button class="icon-btn del" onclick="openDeleteProduct(${p.id}, '${escHtml(p.nom)}')">🗑️</button>
+      <div class="item-actions" onclick="event.stopPropagation()">
+        <button class="icon-btn edit" onclick="openEditProduct('${escHtml(p.nom)}')">✏️</button>
+        <button class="icon-btn del" onclick="openDeleteProduct('${escHtml(p.nom)}')">🗑️</button>
       </div>
     </div>
   `).join('');
 }
 
-function openAddProduct() {
-  document.getElementById('modal-title').innerHTML = '📦 Nouveau produit';
-  
-  const catOptions = categories.map(c => `<option value="${c.id}">${escHtml(c.nom)}</option>`).join('');
-  
+async function viewProduct(nom) {
+  // Récupérer les détails complets (si besoin)
+  const p = produits.find(x => x.nom === nom);
+  if (!p) return;
+  document.getElementById('modal-title').innerHTML = `📦 ${escHtml(p.nom)}`;
   document.getElementById('modal-body').innerHTML = `
-    <div class="field"><label>Nom du produit *</label><input type="text" id="m-p-nom" placeholder="Ex: Robe de soirée"></div>
-    <div class="field"><label>Catégorie *</label><select id="m-p-cat"><option value="">— Sélectionner —</option>${catOptions}</select></div>
-    <div class="field"><label>Prix ($) *</label><input type="number" id="m-p-prix" placeholder="0.00" step="0.01"></div>
-    <div class="field"><label>Taille / Variante</label><input type="text" id="m-p-taille" placeholder="Ex: XL, 250ml, Rouge"></div>
-    <div class="field"><label>Description</label><textarea id="m-p-desc" placeholder="Détails du produit..."></textarea></div>
+    <div style="padding: 8px 0">
+      <p><strong>Nom :</strong> ${escHtml(p.nom)}</p>
+      <p><strong>Prix :</strong> ${parseFloat(p.prix || 0).toFixed(2)} $</p>
+      <p><strong>Taille :</strong> ${p.taille ? escHtml(p.taille) : '—'}</p>
+      <p><strong>Catégorie :</strong> ${p.categorie_nom ? escHtml(p.categorie_nom) : 'Non spécifiée'}</p>
+      <p><strong>Description :</strong><br>${p.description ? escHtml(p.description) : 'Aucune'}</p>
+    </div>
   `;
-  
+  document.getElementById('modal-ok').style.display = 'none';
+  document.getElementById('modal').classList.add('open');
+}
+
+function openAddProduct() {
+  // Préparer la liste des catégories pour le select
+  const catOptions = categories.map(c => `<option value="${escHtml(c.nom)}">${escHtml(c.nom)}</option>`).join('');
+  document.getElementById('modal-title').innerHTML = '📦 Nouveau produit';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="field"><label>Nom *</label><input type="text" id="m-p-nom" placeholder="Nom du produit"></div>
+    <div class="field"><label>Catégorie *</label><select id="m-p-cat">${catOptions || '<option>Aucune catégorie</option>'}</select></div>
+    <div class="field"><label>Prix ($) *</label><input type="number" id="m-p-prix" step="0.01" placeholder="0.00"></div>
+    <div class="field"><label>Taille / Variante</label><input type="text" id="m-p-taille" placeholder="Ex: XL, 250ml"></div>
+    <div class="field"><label>Description</label><textarea id="m-p-desc" placeholder="Description..."></textarea></div>
+  `;
+  document.getElementById('modal-ok').style.display = 'block';
+  document.getElementById('modal-ok').className = 'btn-primary';
+  document.getElementById('modal-ok').textContent = 'Ajouter';
   document.getElementById('modal-ok').onclick = async () => {
     const nom = document.getElementById('m-p-nom').value.trim();
-    const catId = document.getElementById('m-p-cat').value;
+    const cat = document.getElementById('m-p-cat').value;
     const prix = parseFloat(document.getElementById('m-p-prix').value);
-    
-    if (!nom || !catId || isNaN(prix)) { toast('⚠️ Tous les champs avec * sont requis'); return; }
-    
+    if (!nom || !cat || isNaN(prix)) { toast('⚠️ Nom, catégorie et prix requis'); return; }
     loader(true); closeModal();
     const r = await api('add_product', {
       nom,
-      categorie_id: parseInt(catId),
+      cat,          // le backend attend 'cat' (nom de la catégorie)
       prix,
       taille: document.getElementById('m-p-taille').value.trim() || null,
       desc: document.getElementById('m-p-desc').value.trim() || null
     });
-    if (r && r.success) { toast('✅ Produit ajouté !'); await initMainScreen(); }
+    if (r && r.success) { toast('✅ Produit ajouté'); await initMainScreen(); }
     else { toast(r?.error || '⚠️ Erreur'); loader(false); }
   };
   document.getElementById('modal').classList.add('open');
 }
 
-async function openEditProduct(id) {
-  loader(true);
-  const res = await api('get_product', { id });
-  loader(false);
+function openEditProduct(oldNom) {
+  const p = produits.find(x => x.nom === oldNom);
+  if (!p) { toast('Produit introuvable'); return; }
   
-  const p = res?.product || res;
-  if (!p || p.error) { toast('⚠️ Impossible de charger les détails du produit'); return; }
-  
+  const catOptions = categories.map(c => `<option value="${escHtml(c.nom)}" ${c.nom === p.categorie_nom ? 'selected' : ''}>${escHtml(c.nom)}</option>`).join('');
   document.getElementById('modal-title').innerHTML = '✏️ Modifier le produit';
-  const catOptions = categories.map(c => `
-    <option value="${c.id}" ${parseInt(p.categorie_id) === parseInt(c.id) ? 'selected' : ''}>${escHtml(c.nom)}</option>
-  `).join('');
-  
   document.getElementById('modal-body').innerHTML = `
-    <div class="field"><label>Nom du produit *</label><input type="text" id="m-p-nom" value="${escHtml(p.nom)}"></div>
+    <div class="field"><label>Nom *</label><input type="text" id="m-p-nom" value="${escHtml(p.nom)}"></div>
     <div class="field"><label>Catégorie *</label><select id="m-p-cat">${catOptions}</select></div>
-    <div class="field"><label>Prix ($) *</label><input type="number" id="m-p-prix" value="${p.prix}" step="0.01"></div>
-    <div class="field"><label>Taille / Variante</label><input type="text" id="m-p-taille" value="${escHtml(p.taille||'')}"></div>
+    <div class="field"><label>Prix ($) *</label><input type="number" id="m-p-prix" step="0.01" value="${p.prix}"></div>
+    <div class="field"><label>Taille</label><input type="text" id="m-p-taille" value="${escHtml(p.taille||'')}"></div>
     <div class="field"><label>Description</label><textarea id="m-p-desc">${escHtml(p.description||'')}</textarea></div>
   `;
-  
+  document.getElementById('modal-ok').style.display = 'block';
+  document.getElementById('modal-ok').className = 'btn-primary';
+  document.getElementById('modal-ok').textContent = 'Enregistrer';
   document.getElementById('modal-ok').onclick = async () => {
-    const nom = document.getElementById('m-p-nom').value.trim();
-    const catId = document.getElementById('m-p-cat').value;
+    const newNom = document.getElementById('m-p-nom').value.trim();
+    const cat = document.getElementById('m-p-cat').value;
     const prix = parseFloat(document.getElementById('m-p-prix').value);
-    
-    if (!nom || !catId || isNaN(prix)) { toast('⚠️ Les champs marqués d\'un * sont obligatoires'); return; }
-    
+    if (!newNom || !cat || isNaN(prix)) { toast('⚠️ Nom, catégorie et prix requis'); return; }
     loader(true); closeModal();
     const r = await api('update_product', {
-      id,
-      nom,
-      categorie_id: parseInt(catId),
+      oldNom,
+      nom: newNom,
+      cat,          // backend attend 'cat'
       prix,
       taille: document.getElementById('m-p-taille').value.trim() || null,
       desc: document.getElementById('m-p-desc').value.trim() || null
     });
-    if (r && r.success) { toast('✅ Produit mis à jour !'); await initMainScreen(); }
+    if (r && r.success) { toast('✅ Produit modifié'); await initMainScreen(); }
     else { toast(r?.error || '⚠️ Erreur'); loader(false); }
   };
   document.getElementById('modal').classList.add('open');
 }
 
-function openDeleteProduct(id, nom) {
+function openDeleteProduct(nom) {
   document.getElementById('modal-title').innerHTML = '🗑️ Supprimer le produit';
-  document.getElementById('modal-body').innerHTML = `<p style="color:var(--sub); line-height:1.5">Voulez-vous retirer <strong>${escHtml(nom)}</strong> du catalogue ?</p>`;
+  document.getElementById('modal-body').innerHTML = `<p style="color:var(--sub); line-height:1.5">Supprimer définitivement <strong>${escHtml(nom)}</strong> ?</p>`;
+  document.getElementById('modal-ok').style.display = 'block';
   document.getElementById('modal-ok').className = 'btn-danger';
-  document.getElementById('modal-ok').textContent = '🗑️ Supprimer le produit';
+  document.getElementById('modal-ok').textContent = '🗑️ Supprimer';
   document.getElementById('modal-ok').onclick = async () => {
     loader(true); closeModal();
-    const r = await api('delete_product', { id });
+    const r = await api('delete_product', { nom });
     if (r && r.success) { toast('🗑️ Produit supprimé'); await initMainScreen(); }
     else { toast(r?.error || '⚠️ Erreur'); loader(false); }
   };
@@ -606,23 +650,26 @@ function openDeleteProduct(id, nom) {
 
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
-  // Réinitialisation de la classe au cas où elle a été passée en mode danger
+  // Réinitialiser l'affichage du bouton
   setTimeout(() => {
-    document.getElementById('modal-ok').className = 'btn-primary';
-    document.getElementById('modal-ok').textContent = 'Enregistrer les modifications';
+    const btn = document.getElementById('modal-ok');
+    btn.style.display = 'block';
+    btn.className = 'btn-primary';
+    btn.textContent = 'Enregistrer';
   }, 300);
 }
 
-// Fermeture au clic à l'extérieur de la bottom sheet
-document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
+// Fermeture au clic à l'extérieur
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
 
 // Démarrage automatique
 (async () => {
   loader(true);
   const d = await api('get_profile');
   loader(false);
-  const prof = d?.profile || d;
-  if (prof && !prof.error && prof.nom_boutique) {
+  if (d && !d.error && d.nom_boutique) {
     await initMainScreen();
   } else {
     showScreen('screen-login');
