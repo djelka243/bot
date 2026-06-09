@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Gestionnaire Boutique</title>
+<title>Gestionnaire Etablissement</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root {
@@ -144,7 +144,7 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
 <!-- ÉCRAN CONNEXION / INSCRIPTION -->
 <div class="screen" id="screen-login">
   <div class="login-box">
-    <div class="login-logo"><img src="./logo.png" alt="logo"></div>
+    <div class="login-logo"><img src="./logo.png" style="height: 64px; width: 64px" alt="logo"></div>
     <div class="login-title">Bot Vendeur</div>
     <div class="login-sub">Gérez votre catalogue en direct sur Telegram</div>
     <div class="tab-switcher">
@@ -154,18 +154,18 @@ html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMa
     <div class="form-card">
       <div class="form-section active" id="fs-login">
         <div class="field">
-          <label>Mot de passe de la boutique</label>
+          <label>Mot de passe de la Etablissement</label>
           <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
         </div>
         <button class="btn-primary" onclick="seConnecter()">🔑 Me connecter</button>
       </div>
       <div class="form-section" id="fs-register">
-        <div class="field"><label>Nom de la boutique *</label><input type="text" id="reg-nom" placeholder="Ex: Mon Shop Magique"></div>
+        <div class="field"><label>Nom de la Etablissement *</label><input type="text" id="reg-nom" placeholder="Ex: Mon Shop Magique"></div>
         <div class="field"><label>Description</label><textarea id="reg-desc" placeholder="Ce que vous vendez..."></textarea></div>
         <div class="field"><label>Téléphone *</label><input type="tel" id="reg-tel" placeholder="Ex: 0977196639"></div>
         <div class="field"><label>Adresse *</label><input type="text" id="reg-adr" placeholder="Ex: Gombe, Ville"></div>
         <div class="field"><label>Mot de passe *</label><input type="password" id="reg-password" placeholder="Min. 4 caractères"></div>
-        <button class="btn-primary" onclick="sInscrire()">🚀 Créer la boutique</button>
+        <button class="btn-primary" onclick="sInscrire()">🚀 Créer</button>
       </div>
     </div>
   </div>
