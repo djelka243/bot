@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bot Vendeur — Panneau</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--tg-theme-bg-color, #fff);
+    color: var(--tg-theme-text-color, #000);
+    font-size: 15px;
+    padding-bottom: 80px;
+  }
+  .header {
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    padding: 14px 16px 10px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid rgba(0,0,0,.08);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .header h1 { font-size: 17px; font-weight: 600; }
+  .header .sub { font-size: 12px; color: var(--tg-theme-hint-color, #888); }
+  .nav-tabs {
+    display: flex; background: var(--tg-theme-secondary-bg-color, #f4f4f4);
+    border-bottom: 1px solid rgba(0,0,0,.08);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex: 1; min-width: 80px; padding: 12px 8px;
+    background: none; border: none; font-size: 12px;
+    color: var(--tg-theme-hint-color, #888);
+    cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+  }
+  .tab-btn.active {
+    color: var(--tg-theme-link-color, #2AABEE);
+    border-bottom-color: var(--tg-theme-link-color, #2AABEE);
+    font-weight: 600;
+  }
+  .tab-btn .icon { display: block; font-size: 20px; margin-bottom: 2px; }
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+  .card {
+    background: var(--tg-theme-secondary-bg-color, #f9f9f9);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 13px; font-weight: 600; margin-bottom: 10px;
+    color: var(--tg-theme-hint-color, #888);
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .form-group { margin-bottom: 12px; }
+  .form-group label {
+    display: block; font-size: 13px; margin-bottom: 5px;
+    color: var(--tg-theme-hint-color, #888);
+  }
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    width: 100%; padding: 11px 13px;
+    background: var(--tg-theme-bg-color, #fff);
+    color: var(--tg-theme-text-color, #000);
+    border: 1.5px solid rgba(0,0,0,.1);
+    border-radius: 10px; font-size: 15px;
+    outline: none; transition: border-color .2s;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    border-color: var(--tg-theme-link-color, #2AABEE);
+  }
+  .form-group textarea { min-height: 80px; resize: vertical; }
+  .form-group .hint {
+    font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-top: 4px;
+  }
+  .btn {
+    width: 100%; padding: 13px;
+    background: var(--tg-theme-button-color, #2AABEE);
+    color: var(--tg-theme-button-text-color, #fff);
+    border: none; border-radius: 10px;
+    font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: opacity .2s;
+  }
+  .btn:active { opacity: .75; }
+  .btn.secondary {
+    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    color: var(--tg-theme-text-color, #000);
+    margin-top: 8px;
+  }
+  .btn.danger {
+    background: #ff3b30;
+    color: #fff;
+  }
+  .list-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.06);
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-item .info { flex: 1; min-width: 0; }
+  .list-item .name { font-size: 15px; font-weight: 500; }
+  .list-item .meta { font-size: 13px; color: var(--tg-theme-hint-color, #888); }
+  .list-item .actions { display: flex; gap: 6px; }
+  .icon-btn {
+    background: none; border: none; cursor: pointer;
+    padding: 6px; border-radius: 8px; font-size: 18px;
+    color: var(--tg-theme-link-color, #2AABEE);
+    transition: background .2s;
+  }
+  .icon-btn:active { background: rgba(0,0,0,.06); }
+  .icon-btn.danger { color: #ff3b30; }
+  .badge {
+    display: inline-block; padding: 3px 8px;
+    border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .badge.pending { background: #fff3cd; color: #856404; }
+  .badge.approved { background: #d4edda; color: #155724; }
+  .badge.rejected { background: #f8d7da; color: #721c24; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.8); color: #fff;
+    padding: 10px 20px; border-radius: 20px;
+    font-size: 14px; z-index: 999; pointer-events: none;
+    opacity: 0; transition: opacity .3s;
+  }
+  .toast.show { opacity: 1; }
+  .empty-state {
+    text-align: center; padding: 32px 16px;
+    color: var(--tg-theme-hint-color, #888);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 8px; }
+  .profile-row {
+    display: flex; justify-content: space-between;
+    padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,.06);
+  }
+  .profile-row:last-child { border-bottom: none; }
+  .profile-row .lbl { font-size: 14px; color: var(--tg-theme-hint-color, #888); }
+  .profile-row .val { font-size: 14px; font-weight: 500; text-align: right; max-width: 60%; }
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 100;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--tg-theme-bg-color, #fff);
+    width: 100%; border-radius: 16px 16px 0 0;
+    padding: 16px; max-height: 85vh; overflow-y: auto;
+  }
+  .modal-handle {
+    width: 36px; height: 4px; background: rgba(0,0,0,.2);
+    border-radius: 2px; margin: 0 auto 16px;
+  }
+  .modal-title { font-size: 17px; font-weight: 600; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header" style="padding:0;border:none;background:none">
+      <div>
+        <h1>🏪 Bot Vendeur</h1>
+        <div class="sub" id="user-name">Chargement...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <button class="tab-btn active" onclick="showTab('profil')">
+    <span class="icon">👤</span>Profil
+  </button>
+  <button class="tab-btn" onclick="showTab('categories')">
+    <span class="icon">🗂️</span>Catégories
+  </button>
+  <button class="tab-btn" onclick="showTab('produits')">
+    <span class="icon">📦</span>Produits
+  </button>
+  <button class="tab-btn" onclick="showTab('connexion')">
+    <span class="icon">🔑</span>Connexion
+  </button>
+</div>
+
+<!-- PAGE PROFIL -->
+<div id="page-profil" class="page active">
+  <div id="profil-content">
+    <div class="empty-state">
+      <div class="icon">⏳</div>
+      <div>Chargement du profil...</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE CATEGORIES -->
+<div id="page-categories" class="page">
+  <div class="card">
+    <div class="card-title">➕ Nouvelle catégorie</div>
+    <div class="form-group">
+      <label>Nom de la catégorie</label>
+      <input type="text" id="cat-nom" placeholder="Ex: Beauté, Vêtements..." maxlength="100">
+    </div>
+    <button class="btn" onclick="ajouterCategorie()">Ajouter la catégorie</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗂️ Mes catégories</div>
+    <div id="liste-categories">
+      <div class="empty-state"><div class="icon">🗂️</div><div>Aucune catégorie</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE PRODUITS -->
+<div id="page-produits" class="page">
+  <div class="card">
+    <div class="card-title">➕ Nouveau produit</div>
+    <div class="form-group">
+      <label>Nom du produit *</label>
+      <input type="text" id="prod-nom" placeholder="Ex: Crème hydratante" maxlength="200">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="prod-desc" placeholder="Description optionnelle..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Catégorie *</label>
+      <select id="prod-cat">
+        <option value="">— Choisir une catégorie —</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Prix ($) *</label>
+      <input type="number" id="prod-prix" placeholder="0.00" min="0" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>Taille / Variante</label>
+      <input type="text" id="prod-taille" placeholder="Ex: 250ml, S/M/L... (optionnel)">
+    </div>
+    <button class="btn" onclick="ajouterProduit()">Ajouter le produit</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📦 Mes produits</div>
+    <div id="liste-produits">
+      <div class="empty-state"><div class="icon">📦</div><div>Aucun produit</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE CONNEXION -->
+<div id="page-connexion" class="page">
+  <div id="connexion-form">
+    <div class="card">
+      <div class="card-title">🔑 Connexion</div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" id="login-password" placeholder="Votre mot de passe">
+      </div>
+      <button class="btn" onclick="seConnecter()">Se connecter</button>
+    </div>
+    <div class="card">
+      <div class="card-title">📝 Inscription</div>
+      <div class="form-group">
+        <label>Nom de la boutique *</label>
+        <input type="text" id="reg-nom" placeholder="Ex: MH Beauty Shop">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="reg-desc" placeholder="Décrivez votre boutique..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input type="tel" id="reg-tel" placeholder="+243...">
+      </div>
+      <div class="form-group">
+        <label>Adresse</label>
+        <input type="text" id="reg-adr" placeholder="Votre adresse">
+      </div>
+      <div class="form-group">
+        <label>Mot de passe *</label>
+        <input type="password" id="reg-password" placeholder="Min. 4 caractères">
+        <div class="hint">⚠️ Choisissez un mot de passe sécurisé</div>
+      </div>
+      <button class="btn" onclick="sInscrire()">Créer ma boutique</button>
+    </div>
+  </div>
+  <div id="logout-section" style="display:none">
+    <div class="card">
+      <div class="card-title">✅ Connecté</div>
+      <div class="profile-row">
+        <span class="lbl">Statut</span>
+        <span class="val">Session active</span>
+      </div>
+    </div>
+    <button class="btn danger" onclick="seDeconnecter()">🔒 Se déconnecter</button>
+  </div>
+</div>
+
+<!-- Modal édition -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">Modifier</div>
+    <div id="modal-body"></div>
+    <button class="btn" id="modal-confirm-btn" style="margin-top:12px">Confirmer</button>
+    <button class="btn secondary" onclick="closeModal()">Annuler</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────
+const N8N_WEBHOOK = 'https://TON_N8N_URL/webhook/tma-vendeur'; // ← à remplacer
+
+// ── INIT TELEGRAM ─────────────────────────────────────────
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('secondary_bg_color');
+}
+
+const chatId = tg?.initDataUnsafe?.user?.id?.toString() || 'test_user';
+const userName = tg?.initDataUnsafe?.user?.first_name || 'Utilisateur';
+document.getElementById('user-name').textContent = userName;
+
+// ── STATE ─────────────────────────────────────────────────
+let categories = [];
+let produits = [];
+let authenticated = false;
+
+// ── NAVIGATION ────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  event.currentTarget.classList.add('active');
+
+  if (tab === 'categories') chargerCategories();
+  if (tab === 'produits') { chargerCategories(); chargerProduits(); }
+  if (tab === 'profil') chargerProfil();
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+function toast(msg, duration = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
+}
+
+// ── API CALL → n8n ────────────────────────────────────────
+async function callN8n(action, payload = {}) {
+  try {
+    const res = await fetch(N8N_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chatId, action, ...payload })
+    });
+    return await res.json();
+  } catch(e) {
+    console.error(e);
+    return { error: 'Erreur réseau' };
+  }
+}
+
+// ── PROFIL ────────────────────────────────────────────────
+async function chargerProfil() {
+  const data = await callN8n('get_profile');
+  const el = document.getElementById('profil-content');
+
+  if (!data || data.error || !data.nom_boutique) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">🔒</div><div>Connectez-vous pour voir votre profil</div></div>`;
+    return;
+  }
+  authenticated = true;
+  document.getElementById('logout-section').style.display = 'block';
+  document.getElementById('connexion-form').style.display = 'none';
+
+  const statusMap = {
+    'en_attente': '<span class="badge pending">⏳ En attente</span>',
+    'approuvé':   '<span class="badge approved">✅ Approuvé</span>',
+    'approuve':   '<span class="badge approved">✅ Approuvé</span>',
+    'rejeté':     '<span class="badge rejected">❌ Rejeté</span>',
+  };
+  const statut = statusMap[data.statut?.toLowerCase()] || `<span class="badge pending">${data.statut || '-'}</span>`;
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">🏪 Ma boutique</div>
+      <div class="profile-row"><span class="lbl">Nom</span><span class="val">${data.nom_boutique || '-'}</span></div>
+      <div class="profile-row"><span class="lbl">Description</span><span class="val">${data.description || '-'}</span></div>
+      <div class="profile-row"><span class="lbl">Téléphone</span><span class="val">${data.telephone || '-'}</span></div>
+      <div class="profile-row"><span class="lbl">Adresse</span><span class="val">${data.adresse || '-'}</span></div>
+      <div class="profile-row"><span class="lbl">Statut</span><span class="val">${statut}</span></div>
+    </div>`;
+}
+
+// ── CATEGORIES ────────────────────────────────────────────
+async function chargerCategories() {
+  const data = await callN8n('list_categories');
+  categories = Array.isArray(data) ? data : [];
+  renderCategories();
+  updateCatSelect();
+}
+
+function renderCategories() {
+  const el = document.getElementById('liste-categories');
+  if (!categories.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">🗂️</div><div>Aucune catégorie</div></div>`;
+    return;
+  }
+  el.innerHTML = categories.map(c => `
+    <div class="list-item">
+      <div class="info"><div class="name">${c.nom}</div></div>
+      <div class="actions">
+        <button class="icon-btn" onclick="editCategorie('${escHtml(c.nom)}')" title="Modifier">✏️</button>
+        <button class="icon-btn danger" onclick="deleteCategorie('${escHtml(c.nom)}')" title="Supprimer">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function updateCatSelect() {
+  const sel = document.getElementById('prod-cat');
+  sel.innerHTML = '<option value="">— Choisir une catégorie —</option>' +
+    categories.map(c => `<option value="${escHtml(c.nom)}">${c.nom}</option>`).join('');
+}
+
+async function ajouterCategorie() {
+  const nom = document.getElementById('cat-nom').value.trim();
+  if (!nom || nom.length < 2) { toast('⚠️ Nom trop court'); return; }
+  const r = await callN8n('add_category', { nom });
+  if (r.success) {
+    toast('✅ Catégorie ajoutée !');
+    document.getElementById('cat-nom').value = '';
+    chargerCategories();
+  } else {
+    toast(r.error || '⚠️ Erreur');
+  }
+}
+
+function editCategorie(nom) {
+  document.getElementById('modal-title').textContent = '✏️ Renommer la catégorie';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group">
+      <label>Ancien nom</label>
+      <input type="text" value="${nom}" disabled style="opacity:.6">
+    </div>
+    <div class="form-group">
+      <label>Nouveau nom</label>
+      <input type="text" id="modal-new-cat-nom" placeholder="Nouveau nom" value="${nom}">
+    </div>`;
+  document.getElementById('modal-confirm-btn').onclick = async () => {
+    const newNom = document.getElementById('modal-new-cat-nom').value.trim();
+    if (!newNom || newNom.length < 2) { toast('⚠️ Nom trop court'); return; }
+    const r = await callN8n('update_category', { oldNom: nom, newNom });
+    if (r.success) { toast('✅ Catégorie mise à jour !'); closeModal(); chargerCategories(); }
+    else toast(r.error || '⚠️ Erreur');
+  };
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+async function deleteCategorie(nom) {
+  if (!confirm(`Supprimer la catégorie "${nom}" ?`)) return;
+  const r = await callN8n('delete_category', { nom });
+  if (r.success) { toast('🗑️ Supprimée !'); chargerCategories(); }
+  else toast(r.error || '⚠️ Erreur');
+}
+
+// ── PRODUITS ──────────────────────────────────────────────
+async function chargerProduits() {
+  const data = await callN8n('list_products');
+  produits = Array.isArray(data) ? data : [];
+  renderProduits();
+}
+
+function renderProduits() {
+  const el = document.getElementById('liste-produits');
+  if (!produits.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📦</div><div>Aucun produit</div></div>`;
+    return;
+  }
+  el.innerHTML = produits.map(p => `
+    <div class="list-item">
+      <div class="info">
+        <div class="name">${p.nom}</div>
+        <div class="meta">${p.prix} $ ${p.taille ? '· ' + p.taille : ''}</div>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" onclick="editProduit('${escHtml(p.nom)}')" title="Modifier">✏️</button>
+        <button class="icon-btn danger" onclick="deleteProduit('${escHtml(p.nom)}')" title="Supprimer">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+async function ajouterProduit() {
+  const nom   = document.getElementById('prod-nom').value.trim();
+  const desc  = document.getElementById('prod-desc').value.trim();
+  const cat   = document.getElementById('prod-cat').value;
+  const prix  = parseFloat(document.getElementById('prod-prix').value);
+  const taille = document.getElementById('prod-taille').value.trim();
+
+  if (!nom || nom.length < 2) { toast('⚠️ Nom requis'); return; }
+  if (!cat) { toast('⚠️ Choisissez une catégorie'); return; }
+  if (isNaN(prix) || prix <= 0) { toast('⚠️ Prix invalide'); return; }
+
+  const r = await callN8n('add_product', { nom, desc: desc || null, cat, prix, taille: taille || null });
+  if (r.success) {
+    toast('✅ Produit ajouté !');
+    ['prod-nom','prod-desc','prod-prix','prod-taille'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('prod-cat').value = '';
+    chargerProduits();
+  } else toast(r.error || '⚠️ Erreur');
+}
+
+function editProduit(nom) {
+  const p = produits.find(x => x.nom === nom);
+  document.getElementById('modal-title').textContent = '✏️ Modifier le produit';
+  document.getElementById('modal-body').innerHTML = `
+    <div class="form-group"><label>Nom</label><input type="text" id="m-nom" value="${escHtml(p.nom)}"></div>
+    <div class="form-group"><label>Description</label><textarea id="m-desc">${escHtml(p.description || '')}</textarea></div>
+    <div class="form-group"><label>Prix ($)</label><input type="number" id="m-prix" value="${p.prix}" min="0" step="0.01"></div>
+    <div class="form-group"><label>Taille</label><input type="text" id="m-taille" value="${escHtml(p.taille || '')}"></div>`;
+  document.getElementById('modal-confirm-btn').onclick = async () => {
+    const newNom  = document.getElementById('m-nom').value.trim();
+    const newDesc = document.getElementById('m-desc').value.trim();
+    const newPrix = parseFloat(document.getElementById('m-prix').value);
+    const newTail = document.getElementById('m-taille').value.trim();
+    if (!newNom || isNaN(newPrix) || newPrix <= 0) { toast('⚠️ Données invalides'); return; }
+    const r = await callN8n('update_product', { oldNom: nom, nom: newNom, desc: newDesc || null, prix: newPrix, taille: newTail || null });
+    if (r.success) { toast('✅ Produit mis à jour !'); closeModal(); chargerProduits(); }
+    else toast(r.error || '⚠️ Erreur');
+  };
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+async function deleteProduit(nom) {
+  if (!confirm(`Supprimer "${nom}" ?`)) return;
+  const r = await callN8n('delete_product', { nom });
+  if (r.success) { toast('🗑️ Supprimé !'); chargerProduits(); }
+  else toast(r.error || '⚠️ Erreur');
+}
+
+// ── CONNEXION ─────────────────────────────────────────────
+async function seConnecter() {
+  const pwd = document.getElementById('login-password').value;
+  if (!pwd) { toast('⚠️ Entrez votre mot de passe'); return; }
+  const r = await callN8n('login', { password: pwd });
+  if (r.success) {
+    toast('✅ Connecté !');
+    authenticated = true;
+    document.getElementById('connexion-form').style.display = 'none';
+    document.getElementById('logout-section').style.display = 'block';
+    chargerProfil();
+  } else toast('❌ Mot de passe incorrect');
+}
+
+async function sInscrire() {
+  const nom  = document.getElementById('reg-nom').value.trim();
+  const desc = document.getElementById('reg-desc').value.trim();
+  const tel  = document.getElementById('reg-tel').value.trim();
+  const adr  = document.getElementById('reg-adr').value.trim();
+  const pwd  = document.getElementById('reg-password').value;
+
+  if (!nom) { toast('⚠️ Nom de boutique requis'); return; }
+  if (!pwd || pwd.length < 4) { toast('⚠️ Mot de passe trop court (min 4)'); return; }
+
+  const r = await callN8n('register', {
+    nom_boutique: nom, description: desc || null,
+    telephone: tel || null, adresse: adr || null, password: pwd
+  });
+  if (r.success) {
+    toast('🎉 Boutique créée ! En attente de validation.');
+    authenticated = true;
+    document.getElementById('connexion-form').style.display = 'none';
+    document.getElementById('logout-section').style.display = 'block';
+  } else toast(r.error || '⚠️ Erreur');
+}
+
+async function seDeconnecter() {
+  await callN8n('logout');
+  authenticated = false;
+  document.getElementById('connexion-form').style.display = 'block';
+  document.getElementById('logout-section').style.display = 'none';
+  document.getElementById('profil-content').innerHTML = `<div class="empty-state"><div class="icon">🔒</div><div>Connectez-vous</div></div>`;
+  toast('👋 Déconnecté');
+}
+
+// ── MODAL ─────────────────────────────────────────────────
+function closeModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('edit-modal')) closeModal();
+});
+
+// ── UTILS ─────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── AUTO-INIT ─────────────────────────────────────────────
+chargerProfil();
+</script>
+</body>
+</html>
