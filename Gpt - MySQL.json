@@ -1,0 +1,948 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "708359ef-8c52-4e52-82bf-188c14fde476",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3744,
+        2880
+      ],
+      "webhookId": "03a3f63c-f604-4b8a-9b66-fca037f215e1",
+      "credentials": {
+        "telegramApi": {
+          "id": "8z9m7oySTithfm7m",
+          "name": "Mh beauty"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id.toString() }}",
+              "type": "string"
+            },
+            {
+              "id": "t2",
+              "name": "userMessage",
+              "value": "={{ ($json.message.text ?? '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "t3",
+              "name": "userName",
+              "value": "={{ ($json.message.from.first_name ?? '') + ' ' + ($json.message.from.last_name ?? '') }}",
+              "type": "string"
+            },
+            {
+              "id": "t4",
+              "name": "sessionId",
+              "value": "=tg_{{ $json.message.chat.id }}",
+              "type": "string"
+            },
+            {
+              "id": "t5",
+              "name": "orderRef",
+              "value": "=CMD-{{ $json.message.chat.id }}-{{ Date.now() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cdc48617-33de-4954-afef-f368dc67dabf",
+      "name": "Normaliser Telegram",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3520,
+        2880
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg       = $input.first().json.userMessage ?? '';\nconst chatId    = $input.first().json.chatId;\nconst sessionId = $input.first().json.sessionId;\nconst orderRef  = $input.first().json.orderRef;\nconst userName  = $input.first().json.userName;\n\nlet routeTo   = 'agent';\nlet navCatId  = '';\nlet navOffset = 0;\nlet navProdId = '';\n\n// Détection des boutons avec ID caché (séparateur \\u200B)\nconst hidden = '\\u200B';\n\nif (msg.startsWith('📂 ') && msg.includes(hidden)) {\n  // Catégorie\n  const id = msg.split(hidden).pop();\n  if (id) { routeTo = 'page'; navCatId = id; navOffset = 0; }\n} else if (msg.startsWith('⬅️ ') && msg.includes(hidden)) {\n  // Retour catégorie ou Page préc.\n  const parts = msg.split(hidden);\n  if (parts.length >= 3) {\n    navCatId = parts[1];\n    navOffset = parseInt(parts[2], 10) || 0;\n    routeTo = 'page';\n  }\n} else if (msg.startsWith('Page suiv.') && msg.includes(hidden)) {\n  const parts = msg.split(hidden);\n  if (parts.length >= 3) {\n    navCatId = parts[1];\n    navOffset = parseInt(parts[2], 10) || 0;\n    routeTo = 'page';\n  }\n} else if (msg.includes(hidden) && !msg.startsWith('📂') && !msg.startsWith('⬅️') && !msg.startsWith('Page suiv.') && !msg.startsWith('🛒')) {\n  // Produit (NomProduit​ID)\n  const id = msg.split(hidden).pop();\n  if (id) { routeTo = 'prod'; navProdId = id; }\n} else if (msg.startsWith('🏠 Accueil')) {\n  routeTo = 'cat';\n} else if (msg.startsWith('🛒 Commander : ')) {\n  // Le bouton Commander est envoyé à l'agent (pour collecte)\n  routeTo = 'agent';\n} else if (msg === '__CAT__') {\n  routeTo = 'cat';\n} else if (msg.startsWith('__PAGE__')) {\n  const parts = msg.replace('__PAGE__', '').split('__');\n  navCatId  = parts[0] ?? '';\n  navOffset = parseInt(parts[1] ?? '0', 10);\n  routeTo   = 'page';\n} else if (msg.startsWith('__PROD__')) {\n  navProdId = msg.replace('__PROD__', '').trim();\n  routeTo   = 'prod';\n} else if (msg.startsWith('__NAV_STATE__') || msg.startsWith('__PROD_STATE__') || msg.startsWith('__FIND_CAT__')) {\n  routeTo = 'ignore';\n}\n\nreturn [{ json: { chatId, userMessage: msg, userName, sessionId, orderRef, routeTo, navCatId, navOffset: navOffset.toString(), navProdId } }];"
+      },
+      "id": "68fc9d66-ca55-456e-a6a7-e41bcdb22013",
+      "name": "Router Navigation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3296,
+        2880
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "r1",
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "page",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "r2",
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "prod",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "r3",
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "cat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "r4",
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ae35ecb8-57fd-4b8f-b3f0-7b133bf1e5fc",
+      "name": "Switch Route",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [
+        -3056,
+        2848
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT p.id, p.name, p.price, COUNT(*) OVER() AS _total FROM produits p WHERE p.categorie_id = ' + ($json.navCatId || '0') + ' ORDER BY p.id LIMIT 10 OFFSET ' + ($json.navOffset || '0') }}",
+        "options": {}
+      },
+      "id": "137069f8-02ca-42b9-acd8-9366672e842d",
+      "name": "SQL Pagination",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -2544,
+        2560
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT p.id, p.name, p.description, p.price, p.taille, p.categorie_id, i.url AS photo_url FROM produits p LEFT JOIN image_produits i ON i.produit_id = p.id WHERE p.id = ' + ($json.navProdId || '0') + ' LIMIT 1' }}",
+        "options": {}
+      },
+      "id": "995718b0-b90a-4f39-bcb1-6f565bef620c",
+      "name": "SQL Produit",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -2544,
+        2864
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, name FROM categories ORDER BY name",
+        "options": {}
+      },
+      "id": "40974584-270a-429e-bc4b-139f5d509fc0",
+      "name": "SQL Categories",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -2544,
+        3168
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const PAGE_SIZE = 10;\nconst nav     = $('Router Navigation').first().json;\nconst catId   = nav.navCatId;\nconst offset  = parseInt(nav.navOffset, 10);\nconst rows    = $input.all().map(i => i.json);\nconst total   = rows.length > 0 ? Number(rows[0]._total ?? rows.length) : 0;\nconst H       = '\\u200B'; // séparateur invisible\n\nif (rows.length === 0) {\n  return [{ json: {\n    chatId: nav.chatId,\n    sendType: 'text',\n    text: '😕 Aucun produit dans cette catégorie.',\n    keyboard: [[{ text: '🏠 Accueil' }]]\n  }}];\n}\n\nconst keyboard = rows.map(r => [{ text: r.name + H + r.id }]);\n\nconst navRow = [];\nif (offset > 0)                  navRow.push({ text: '⬅️ Page préc.' + H + catId + H + (offset - PAGE_SIZE) });\nif (offset + PAGE_SIZE < total)  navRow.push({ text: 'Page suiv. ➡️' + H + catId + H + (offset + PAGE_SIZE) });\nif (navRow.length) keyboard.push(navRow);\nkeyboard.push([{ text: '🏠 Accueil' }]);\n\nconst page = Math.floor(offset / PAGE_SIZE) + 1;\nconst totalPages = Math.ceil(total / PAGE_SIZE);\n\nreturn [{ json: {\n  chatId:   nav.chatId,\n  sendType: 'text',\n  text: `🛍️ Produits — page ${page}/${totalPages}\\nChoisissez un produit :`,\n  keyboard\n}}];"
+      },
+      "id": "91400f6f-6179-4348-ba80-b02f58fc9bee",
+      "name": "Handle Pagination",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2288,
+        2560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const BASE_URL = 'https://mhbeauty.shop/storage/';\nconst nav    = $('Router Navigation').first().json;\nconst rows   = $input.all().map(i => i.json);\nconst p      = rows[0];\nconst H      = '\\u200B';\n\nif (!p || !p.name) {\n  return [{ json: {\n    chatId:   nav.chatId,\n    sendType: 'text',\n    text:     '😕 Produit introuvable.',\n    keyboard: [[{ text: '🏠 Accueil' }]]\n  }}];\n}\n\nconst rawUrl   = (p.photo_url ?? '').trim();\nconst photoUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : BASE_URL + rawUrl.replace(/^\\//, '')) : '';\nconst caption  = `🌟 ${p.name}\\n\\n📝 ${p.description ?? ''}\\n💵 Prix : ${p.price} $\\n📐 Taille : ${p.taille ?? 'N/A'}\\n\\nVeuillez indiquer la quantité souhaitée. 😊`;\n\nconst keyboard = [\n  [{ text: '🛒 Commander : ' + p.name + H + p.id + H + p.price }],\n  [{ text: '⬅️ Retour catégorie' + H + p.categorie_id + H + '0' }, { text: '🏠 Accueil' }]\n];\n\nreturn [{ json: {\n  chatId:   nav.chatId,\n  sendType: photoUrl ? 'photo' : 'text',\n  text:     caption,\n  photoUrl,\n  keyboard\n}}];"
+      },
+      "id": "1d90c73c-1511-44fa-88b7-474e33ad2eea",
+      "name": "Handle Produit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2288,
+        2864
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const nav  = $('Router Navigation').first().json;\nconst rows = $input.all().map(i => i.json);\nconst H    = '\\u200B';\n\nif (rows.length === 0) {\n  return [{ json: {\n    chatId: nav.chatId,\n    sendType: 'text',\n    text: '😕 Aucune catégorie trouvée.'\n  }}];\n}\n\nconst keyboard = rows.map(r => [{ text: '📂 ' + r.name + H + r.id }]);\nkeyboard.push([{ text: '🔍 Rechercher un produit' }]);\n\nreturn [{ json: {\n  chatId:   nav.chatId,\n  sendType: 'text',\n  text:     '🌸 Bienvenue chez MH Beauty !\\nChoisissez une catégorie :',\n  keyboard\n}}];"
+      },
+      "id": "597b3413-4283-465a-83bc-4a5b8466b837",
+      "name": "Handle Categories",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2288,
+        3168
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "s1",
+                    "leftValue": "={{ $json.sendType }}",
+                    "rightValue": "photo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "s2",
+                    "leftValue": "={{ $json.sendType }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9def1b2e-ce9b-4110-9f59-83ac42309866",
+      "name": "Photo ou Texte ?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [
+        -1712,
+        2864
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot8700877567:AAEhsYtGO3s5UShEl9gV7nHiiYiTMXStDtI/sendPhoto",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "photo",
+              "value": "={{ $json.photoUrl }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "reply_markup",
+              "value": "={{ JSON.stringify({ keyboard: $json.keyboard, resize_keyboard: true, one_time_keyboard: true }) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7b823187-aa97-4392-ad04-8bb135ad9a78",
+      "name": "Envoi Photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1312,
+        2720
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot8700877567:AAEhsYtGO3s5UShEl9gV7nHiiYiTMXStDtI/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "reply_markup",
+              "value": "={{ JSON.stringify({ keyboard: $json.keyboard, resize_keyboard: true, one_time_keyboard: true }) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4c55b940-4327-4445-b6b9-7c6c6955e18d",
+      "name": "Envoi Texte",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1312,
+        3040
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Client: {{ $json.userName }}\nMessage: {{ $json.userMessage }}\nchatId: {{ $json.chatId }}\norderRef: {{ $json.orderRef }}",
+        "options": {
+          "systemMessage": "Tu es l'assistante MH Beauty & Creation. Réponds en français, ≤80 mots, émojis. Prix en dollars ($). Jamais de gras (**).\n\nSCHÉMA DB:\n- categories(id, name, slug)\n- produits(id, name, description, price, taille, reduction, categorie_id)\n- image_produits(id, url, produit_id)\n- commandes(id, nom, prenom, telephone, adresse, total, produits, statut, numero_commande)\n\nRÈGLES SQL STRICTES (tu n'as aucune connaissance préalable des données) :\n- Toujours utiliser l'outil SQL pour toute information. Ne JAMAIS inventer un produit, prix ou image.\n- Recherche texte : LOWER(col) LIKE '%mot%'.\n- Si SELECT retourne 0 ligne → répondre \"produit/catégorie introuvable\".\n- Jointure produit+image : SELECT p.id, p.name, p.description, p.price, p.taille, p.categorie_id, i.url AS photo_url FROM produits p LEFT JOIN image_produits i ON i.produit_id=p.id WHERE LOWER(p.name) LIKE '%mot%' LIMIT 1;\n- i.url est un chemin relatif, le retourner tel quel dans photo_url.\n\nCOMPORTEMENT OBLIGATOIRE :\n- Dès le premier message (ex: \"Bonjour\", \"Salut\"), réponds UNIQUEMENT {\"action\":\"show_categories\"}.\n- Pour tout message ne correspondant pas à un bouton explicite, réponds {\"action\":\"show_categories\"}.\n\nDÉCODAGE DU BOUTON COMMANDER (séparateur \\u200B) :\n- '🛒 Commander : NomProduit\\u200BprodId\\u200Bprice' → collecter Nom→Prénom→Téléphone→Adresse. Récap+total. Attendre OUI.\n- '🔍 Rechercher un produit' → demander le nom du produit.\n\nRÉPONSES JSON (une seule ligne, rien avant ni après) :\n{\"action\":\"show_categories\"}\n{\"action\":\"display_product\",\"name\":\"NOM\",\"description\":\"DESC\",\"price\":\"PRIX $\",\"taille\":\"TAILLE\",\"photo_url\":\"VALEUR_SQL\",\"prod_id\":\"ID\",\"cat_id\":\"CAT_ID\"}\n\nCOLLECTE : Nom → Prénom → Téléphone (10 chiffres) → Adresse. Récap + total. Attends OUI.\nPAIEMENT sur OUI : appeler Initier Paiement MH Beauty puis INSERT IGNORE INTO commandes. Confirmer : 🔄 Commande [ref] validée."
+        }
+      },
+      "id": "2f0ffe59-0f2e-475d-90e3-0ed35ee59f1c",
+      "name": "Agent MH Beauty IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -3360,
+        3520
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "f8e546d6-44e1-4364-be8a-655c1d4a1832",
+      "name": "GPT-4o-mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        -3568,
+        3888
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "wurRBEXXPomIM2MD",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Normaliser Telegram').item.json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "e2ad115d-cdae-4f0e-ae85-ba1348424f9b",
+      "name": "Mémoire Session",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -3360,
+        3888
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Exécute une requête SQL SELECT ou INSERT IGNORE sur MySQL MH Beauty. Argument : 'query'.",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('query') }}",
+        "options": {}
+      },
+      "id": "72a7711f-2916-4e4d-ae05-db7d66f74c4e",
+      "name": "Execute a SQL query in MySQL",
+      "type": "n8n-nodes-base.mySqlTool",
+      "typeVersion": 2.5,
+      "position": [
+        -3168,
+        3888
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Initie un paiement MH Beauty. Arguments : client_phone, client_nom, produit_nom, montant, orderRef.",
+        "method": "POST",
+        "url": "https://mhbeauty.online/api/v1/paiement/initier",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_phone",
+              "value": "={{ $fromAI('client_phone') }}"
+            },
+            {
+              "name": "client_nom",
+              "value": "={{ $fromAI('client_nom') }}"
+            },
+            {
+              "name": "produit_nom",
+              "value": "={{ $fromAI('produit_nom') }}"
+            },
+            {
+              "name": "montant",
+              "value": "={{ $fromAI('montant') }}"
+            },
+            {
+              "name": "order_ref",
+              "value": "={{ $fromAI('orderRef') }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "b0c81271-a270-4a5b-bd98-0bbc189b7947",
+      "name": "Initier Paiement MH Beauty",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -2960,
+        3888
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const BASE_URL = 'https://mhbeauty.shop/storage/';\nconst output  = $input.first().json.output ?? '';\nconst chatId  = $('Normaliser Telegram').first().json.chatId;\nconst H       = '\\u200B';\n\n// ── show_categories ──\nif (output.includes('\"action\":\"show_categories\"')) {\n  return [{ json: { chatId, routeTo: 'cat', navCatId: '', navOffset: '0', navProdId: '' } }];\n}\n\n// ── display_product (recherche texte) ──\nconst displayMatch = output.match(/\\{\\s*\"action\"\\s*:\\s*\"display_product\"[\\s\\S]*?\\}/);\nif (displayMatch) {\n  try {\n    const p      = JSON.parse(displayMatch[0]);\n    let rawUrl   = (p.photo_url ?? '').trim();\n    const photoUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : BASE_URL + rawUrl.replace(/^\\//, '')) : '';\n    const cleanText = output.replace(displayMatch[0], '').trim();\n    const caption   = `🌟 ${p.name}\\n\\n📝 ${p.description}\\n💵 Prix : ${p.price}\\n📐 Taille : ${p.taille}\\n\\n${cleanText || 'Veuillez indiquer la quantité souhaitée. 😊'}`;\n    const keyboard  = [\n      [{ text: '🛒 Commander : ' + p.name + H + p.prod_id + H + p.price }],\n      [{ text: '⬅️ Retour catégorie' + H + p.cat_id + H + '0' }, { text: '🏠 Accueil' }]\n    ];\n    return [{ json: {\n      chatId,\n      sendType: photoUrl ? 'photo' : 'text',\n      text:     caption,\n      photoUrl,\n      keyboard\n    }}];\n  } catch(e) {}\n}\n\n// ── Texte simple (commande, questions, etc.) ──\nconst clean = output.replace(/\\{[\\s\\S]*?\\}/g, '').trim();\nreturn [{ json: {\n  chatId,\n  sendType: 'text',\n  text:     clean || '...',\n  keyboard: [[{ text: '🏠 Accueil' }]]\n}}];"
+      },
+      "id": "cf9fcd74-8ac9-4b7d-88c0-1b7a80e3b871",
+      "name": "Parser Réponse Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2784,
+        3520
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "a1",
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "page",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "a2",
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "prod",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "a3",
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "cat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "a4",
+                    "leftValue": "={{ $json.sendType }}",
+                    "rightValue": "photo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "a5",
+                    "leftValue": "={{ $json.sendType }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4929cecd-4dc9-4da3-a6da-430764903174",
+      "name": "Switch Sortie Agent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [
+        -2032,
+        3472
+      ]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normaliser Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliser Telegram": {
+      "main": [
+        [
+          {
+            "node": "Router Navigation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router Navigation": {
+      "main": [
+        [
+          {
+            "node": "Switch Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Route": {
+      "main": [
+        [
+          {
+            "node": "SQL Pagination",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Produit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Categories",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Pagination": {
+      "main": [
+        [
+          {
+            "node": "Handle Pagination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Produit": {
+      "main": [
+        [
+          {
+            "node": "Handle Produit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Categories": {
+      "main": [
+        [
+          {
+            "node": "Handle Categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Pagination": {
+      "main": [
+        [
+          {
+            "node": "Photo ou Texte ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Produit": {
+      "main": [
+        [
+          {
+            "node": "Photo ou Texte ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Categories": {
+      "main": [
+        [
+          {
+            "node": "Photo ou Texte ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Photo ou Texte ?": {
+      "main": [
+        [
+          {
+            "node": "Envoi Photo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envoi Texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent MH Beauty IA": {
+      "main": [
+        [
+          {
+            "node": "Parser Réponse Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mémoire Session": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query in MySQL": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initier Paiement MH Beauty": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser Réponse Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch Sortie Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Sortie Agent": {
+      "main": [
+        [
+          {
+            "node": "SQL Pagination",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Produit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Categories",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envoi Photo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envoi Texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "28ba8da7efe41ef60114b1f60ca46803f555a43a3988061843f330213252ba86"
+  }
+}

@@ -1,0 +1,951 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot8761684363:AAH5wUJyoDoL2rg9MaPbp546p92z23nho4o/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "parse_mode",
+              "value": "HTML"
+            },
+            {
+              "name": "reply_markup",
+              "value": "={{ $json.keyboard && $json.keyboard.length > 0 ? JSON.stringify({ keyboard: $json.keyboard, resize_keyboard: true, one_time_keyboard: true }) : JSON.stringify({ remove_keyboard: true }) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "99c17b12-ad45-4ef3-b7ce-b9a387452199",
+      "name": "Envoi Texte",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -70560,
+        7616
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.output ?? '';\nconst chatId = $('Normaliser Telegram').first().json.chatId;\n\nconst MENU_AUTH = [\n  [{ text: '👤 Mon profil' }, { text: '🗂️ Mes catégories' }],\n  [{ text: '📦 Mes produits' }, { text: '🔒 Se déconnecter' }]\n];\nconst CAT_MENU = [\n  [{ text: '➕ Ajouter catégorie' }, { text: '✏️ Modifier catégorie' }],\n  [{ text: '🗑️ Supprimer catégorie' }, { text: '🏠 Accueil' }]\n];\nconst PROD_MENU = [\n  [{ text: '➕ Ajouter produit' }, { text: '✏️ Modifier produit' }],\n  [{ text: '🗑️ Supprimer produit' }, { text: '🏠 Accueil' }]\n];\n\nfunction ctxKb(text) {\n  const l = (text || '').toLowerCase();\n  if (l.includes('catégorie')) return CAT_MENU;\n  if (l.includes('produit')) return PROD_MENU;\n  return MENU_AUTH;\n}\n\nlet parsed = null;\ntry { parsed = JSON.parse(output.trim()); } catch(e) {\n  try { const m = output.match(/\\{[\\s\\S]*\\}/); if (m) parsed = JSON.parse(m[0]); } catch(e2) {}\n}\n\nif (!parsed) return [{ json: { chatId, text: output.trim() || '...', keyboard: ctxKb(output) } }];\n\nswitch (parsed.action) {\n  case 'category_added':\n    return [{ json: { chatId, text: `✅ Catégorie <b>${parsed.nom}</b> créée !`, keyboard: CAT_MENU } }];\n  case 'product_added':\n    return [{ json: { chatId, text: `✅ Produit <b>${parsed.nom}</b> ajouté à <b>${parsed.prix} $</b> !`, keyboard: PROD_MENU } }];\n  case 'product_updated':\n    return [{ json: { chatId, text: `✅ Produit <b>${parsed.nom}</b> mis à jour !`, keyboard: PROD_MENU } }];\n  case 'product_deleted':\n    return [{ json: { chatId, text: `🗑️ Produit supprimé !`, keyboard: PROD_MENU } }];\n  case 'category_updated':\n    return [{ json: { chatId, text: `✅ Catégorie <b>${parsed.nom}</b> mise à jour !`, keyboard: CAT_MENU } }];\n  case 'category_deleted':\n    return [{ json: { chatId, text: `🗑️ Catégorie supprimée !`, keyboard: CAT_MENU } }];\n  case 'error':\n    return [{ json: { chatId, text: `⚠️ ${parsed.msg}`, keyboard: ctxKb(parsed.msg) } }];\n  default:\n    return [{ json: { chatId, text: output.trim() || '...', keyboard: MENU_AUTH } }];\n}"
+      },
+      "id": "486cd279-fabf-4af1-acea-cd42526e2aea",
+      "name": "Parser Réponse Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -71008,
+        7728
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Exécute des requêtes INSERT, UPDATE ou DELETE sur MySQL. Argument: 'query'.",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('query') }}",
+        "options": {}
+      },
+      "id": "74fa5993-b2c8-4afe-923d-9c8da0650d38",
+      "name": "SQL Tool MySQL",
+      "type": "n8n-nodes-base.mySqlTool",
+      "typeVersion": 2.5,
+      "position": [
+        -71168,
+        7920
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Normaliser Telegram').item.json.sessionId }}",
+        "contextWindowLength": 4
+      },
+      "id": "aed88238-0075-4c1d-b9d3-fab512ccf86c",
+      "name": "Mémoire Session",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -71296,
+        7968
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "234b1271-19c9-4f71-b851-a35766719cc8",
+      "name": "GPT-4o-mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        -71424,
+        8000
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "wurRBEXXPomIM2MD",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userMessage }}",
+        "options": {
+          "systemMessage": "Tu es l'assistant SQL du bot vendeur. Tu exécutes UNIQUEMENT des commandes INSERT, UPDATE ou DELETE via l'outil MySQL. Tu renvoies UNIQUEMENT le JSON demandé, sur une seule ligne, sans texte avant ni après.\n\nRÈGLE ABSOLUE : Appeler l'outil SQL avant de répondre. Ne jamais inventer de données.\n\n__INSERT_CAT__\nSQL:<requête complète>\nNOM:<nom>\n→ Exécute le SQL fourni.\n→ 0 rows affected : {\"action\":\"error\",\"msg\":\"Inscrivez-vous d'abord avant d'ajouter une catégorie.\"}\n→ Succès : {\"action\":\"category_added\",\"nom\":\"<NOM>\"}\n\n__INSERT_PROD__\nSQL:<requête complète>\nNOM:<nom>\nPRIX:<prix>\n→ Exécute le SQL fourni tel quel.\n→ Succès : {\"action\":\"product_added\",\"nom\":\"<NOM>\",\"prix\":\"<PRIX>\"}\n→ Erreur : {\"action\":\"error\",\"msg\":\"Erreur lors de l'ajout du produit.\"}\n\n__UPDATE_PRODUCT__\nSQL_SELECT:<requête SELECT complète>\nSQL_UPDATE:<requête UPDATE complète>\nNOM:<nom produit>\n→ Exécute d'abord SQL_SELECT, si trouvé exécute SQL_UPDATE\n→ Succès : {\"action\":\"product_updated\",\"nom\":\"<NOM>\"}\n→ Non trouvé : {\"action\":\"error\",\"msg\":\"Produit introuvable.\"}\n\n__DELETE_PRODUCT__\nSQL_SELECT:<requête SELECT complète>\nSQL_DELETE:<requête DELETE complète>\n→ Exécute d'abord SQL_SELECT, si trouvé exécute SQL_DELETE\n→ Succès : {\"action\":\"product_deleted\"}\n→ Non trouvé : {\"action\":\"error\",\"msg\":\"Produit introuvable.\"}\n\n__UPDATE_CATEGORY__\nSQL_SELECT:<requête SELECT complète>\nSQL_UPDATE:<requête UPDATE complète>\nNOM:<nouveau nom>\n→ Exécute d'abord SQL_SELECT, si trouvé exécute SQL_UPDATE\n→ Succès : {\"action\":\"category_updated\",\"nom\":\"<NOM>\"}\n→ Non trouvé : {\"action\":\"error\",\"msg\":\"Catégorie introuvable.\"}\n\n__DELETE_CATEGORY__\nSQL_SELECT:<requête SELECT complète>\nSQL_DELETE:<requête DELETE complète>\n→ Exécute d'abord SQL_SELECT, si trouvé exécute SQL_DELETE\n→ Succès : {\"action\":\"category_deleted\"}\n→ Non trouvé : {\"action\":\"error\",\"msg\":\"Catégorie introuvable.\"}\n\nEn cas d'erreur SQL inattendue : {\"action\":\"error\",\"msg\":\"Erreur base de données.\"}"
+        }
+      },
+      "id": "f7edbc3b-985d-4615-890e-b6116479ec52",
+      "name": "Agent Ecom",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -71408,
+        7728
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r1",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "direct",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r2",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r3",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "sql_cats",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r4",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "sql_prods",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r5",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "get_profile_direct",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r6",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "insert_vendeur",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "r7",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "check_login",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ec86557e-6054-4872-9e79-c7abb5859a1f",
+      "name": "Switch Route",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -72912,
+        7648
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const router = $('Router Navigation').first().json;\nreturn [{ json: router }];"
+      },
+      "id": "69178085-ddfd-4010-9252-cde64db55ee2",
+      "name": "Restaurer Données",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -73312,
+        7728
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.saveSQL ? $json.saveSQL : 'SELECT 1' }}",
+        "options": {}
+      },
+      "id": "ab1e05e3-b6da-4df2-a298-25c3be3f6c74",
+      "name": "SQL Sauver État",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -73648,
+        7536
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// ROUTER NAVIGATION — CORRECTION CONNEXION + SESSION + SÉCURITÉ\n// ============================================================\ntry {\n  const norm    = $('Normaliser Telegram').first().json;\n  const chatId  = norm.chatId;\n  const sessionId = norm.sessionId;\n  const userName  = norm.userName;\n  const msgRaw  = norm.userMessage.trim();\n  const msg     = msgRaw.toLowerCase();\n\n  // Lecture sécurisée de la session depuis le nœud SQL\n  const allRows = $input.all();\n  let dbRow = {};\n  if (allRows && allRows.length > 0 && allRows[0].json && Object.keys(allRows[0].json).length > 0) {\n    dbRow = allRows[0].json;\n  }\n\n  const currentStep  = dbRow.step != null ? String(dbRow.step) : null;\n  const authenticated = parseInt(String(dbRow.authenticated ?? '0')) || 0;\n  let D = {};\n  try {\n    D = dbRow.data\n      ? (typeof dbRow.data === 'string' ? JSON.parse(dbRow.data) : dbRow.data)\n      : {};\n  } catch(e) { D = {}; }\n\n  // --- Fonctions utilitaires ----------------------------------------\n  function esc(v) {\n    if (v === null || v === undefined || v === '-' || v === '') return 'NULL';\n    return \"'\" + String(v).replace(/'/g, \"''\") + \"'\";\n  }\n  function mkSaveSQL(step, data, auth) {\n    const authVal = (auth !== undefined && auth !== null) ? parseInt(auth) : authenticated;\n    const dataStr = JSON.stringify(data || {}).replace(/'/g, \"''\");\n    const stepSQL = (step !== null && step !== undefined) ? esc(step) : 'NULL';\n    if (!step && !authVal) {\n      return `DELETE FROM vendor_sessions WHERE chat_id = ${esc(chatId)}`;\n    }\n    return `INSERT INTO vendor_sessions (chat_id, step, data, authenticated)\n            VALUES (${esc(chatId)}, ${stepSQL}, '${dataStr}', ${authVal})\n            ON DUPLICATE KEY UPDATE step = ${stepSQL}, data = '${dataStr}', authenticated = ${authVal}`;\n  }\n  function out(route, payload, nextStep, nextData, auth) {\n    const authVal = (auth !== undefined && auth !== null) ? parseInt(auth) : authenticated;\n    return [{ json: {\n      route, chatId, sessionId, userName,\n      saveSQL: mkSaveSQL(nextStep, nextData, authVal),\n      ...payload\n    }}];\n  }\n  function direct(text, keyboard, ns, nd, auth) {\n    return out('direct', { text, keyboard }, ns, nd, auth);\n  }\n  function toAgent(userMessage, ns, nd, auth) {\n    return out('agent', { userMessage }, ns, nd, auth);\n  }\n  function toCats(catMode, ns, nd, auth) {\n    const authVal = (auth !== undefined && auth !== null) ? parseInt(auth) : authenticated;\n    return [{ json: {\n      route: 'sql_cats', chatId, sessionId, userName, catMode,\n      saveSQL: mkSaveSQL(ns, nd, authVal)\n    }}];\n  }\n  function toProds(prodMode, ns, nd, auth) {\n    const authVal = (auth !== undefined && auth !== null) ? parseInt(auth) : authenticated;\n    return [{ json: {\n      route: 'sql_prods', chatId, sessionId, userName, prodMode,\n      saveSQL: mkSaveSQL(ns, nd, authVal)\n    }}];\n  }\n\n  // --- Menus ---------------------------------------------------------\n  const MENU_NOT_AUTH = [\n    [{ text: \"📝 M'inscrire\" }, { text: '🔑 Se connecter' }]\n  ];\n  const MENU_AUTH = [\n    [{ text: '👤 Mon profil' }, { text: '🗂️ Mes catégories' }],\n    [{ text: '📦 Mes produits' }, { text: '🔒 Se déconnecter' }]\n  ];\n  const MAIN_MENU = authenticated ? MENU_AUTH : MENU_NOT_AUTH;\n  const CAT_MENU = [\n    [{ text: '➕ Ajouter catégorie' }, { text: '✏️ Modifier catégorie' }],\n    [{ text: '🗑️ Supprimer catégorie' }, { text: '🏠 Accueil' }]\n  ];\n  const PROD_MENU = [\n    [{ text: '➕ Ajouter produit' }, { text: '✏️ Modifier produit' }],\n    [{ text: '🗑️ Supprimer produit' }, { text: '🏠 Accueil' }]\n  ];\n\n  // ---- LOG POUR DÉBOGUER (apparaît dans la console du navigateur) ----\n  console.log('Router step:', currentStep, 'auth:', authenticated, 'msg:', msg);\n\n  // ═══════════════════════════════════════\n  // 1. Commandes globales\n  // ═══════════════════════════════════════\n  if (msg === '❌ annuler' || msg === 'annuler') {\n    return direct('❌ Annulé.', MAIN_MENU, null, {}, authenticated);\n  }\n  if (msg === '/start' || msg === '🏠 accueil' || msg === 'accueil') {\n    return direct(`👋 Bonjour ${userName} !\\nQue souhaitez-vous faire ?`, MAIN_MENU, null, {}, authenticated);\n  }\n  if (msg === '/logout' || msg === '🔒 se déconnecter') {\n    return direct('👋 Déconnecté.', MENU_NOT_AUTH, null, {}, 0);\n  }\n\n  // ═══════════════════════════════════════\n  // 2. Connexion (sans demande d'identifiant)\n  // ═══════════════════════════════════════\n  if (msg === '🔑 se connecter' || msg === '/login') {\n    return direct(\n      '🔐 Entrez votre mot de passe :',\n      [[{ text: '❌ Annuler' }]],\n      'login_password',\n      { identifiant: chatId },  // l'identifiant est le chat_id actuel\n      authenticated\n    );\n  }\n\n  if (currentStep === 'login_password') {\n    const sql = `SELECT COUNT(*) AS cnt FROM vendeurs WHERE telegram_chat_id = ${esc(D.identifiant)} AND password = ${esc(msgRaw)}`;\n    return [{ json: { route: 'check_login', chatId, sql, sessionId, userName, saveSQL: '' } }];\n  }\n\n  // ═══════════════════════════════════════\n  // 3. Inscription\n  // ═══════════════════════════════════════\n  if (msg === \"📝 m'inscrire\" || msg === \"s'inscrire\") {\n    return direct('📝 <b>Inscription</b>\\n\\nNom de votre boutique ?', [[{ text: '❌ Annuler' }]], 'reg_nom', {}, 0);\n  }\n  if (currentStep === 'reg_nom') {\n    if (msgRaw.length < 2) return direct('⚠️ Nom trop court.', [[{ text: '❌ Annuler' }]], 'reg_nom', D, 0);\n    return direct(`✅ <b>${msgRaw}</b>\\n\\nDescription ? <i>(- pour passer)</i>`, [[{ text: '-' }, { text: '❌ Annuler' }]], 'reg_desc', { ...D, nom_boutique: msgRaw }, 0);\n  }\n  if (currentStep === 'reg_desc') {\n    return direct('📞 Téléphone ? <i>(- pour passer)</i>', [[{ text: '-' }, { text: '❌ Annuler' }]], 'reg_tel', { ...D, description: msgRaw === '-' ? null : msgRaw }, 0);\n  }\n  if (currentStep === 'reg_tel') {\n    return direct('📍 Adresse ? <i>(- pour passer)</i>', [[{ text: '-' }, { text: '❌ Annuler' }]], 'reg_adr', { ...D, telephone: msgRaw === '-' ? null : msgRaw }, 0);\n  }\n  if (currentStep === 'reg_adr') {\n    return direct('💳 CID EasyPay ? <i>(- pour passer)</i>', [[{ text: '-' }, { text: '❌ Annuler' }]], 'reg_cid', { ...D, adresse: msgRaw === '-' ? null : msgRaw }, 0);\n  }\n  if (currentStep === 'reg_cid') {\n    return direct('🔑 Token EasyPay ? <i>(- pour passer)</i>', [[{ text: '-' }, { text: '❌ Annuler' }]], 'reg_token', { ...D, cideasypay: msgRaw === '-' ? null : msgRaw }, 0);\n  }\n  if (currentStep === 'reg_token') {\n    return direct('🔐 Mot de passe (obligatoire) :', [[{ text: '❌ Annuler' }]], 'reg_password', { ...D, tokeneasypay: msgRaw === '-' ? null : msgRaw }, 0);\n  }\n  if (currentStep === 'reg_password') {\n    if (msgRaw.length < 4) return direct('⚠️ Mot de passe trop court (min 4).', [[{ text: '❌ Annuler' }]], 'reg_password', D, 0);\n    const nd = { ...D, password: msgRaw };\n    const recap = `📋 <b>Récapitulatif</b>\\n\\n🏪 <b>${nd.nom_boutique}</b>\\n📝 ${nd.description || '<i>-</i>'}\\n📞 ${nd.telephone || '<i>-</i>'}\\n📍 ${nd.adresse || '<i>-</i>'}\\n💳 CID: ${nd.cideasypay || '<i>-</i>'}\\n🔑 Token: ${nd.tokeneasypay ? '✅ fourni' : '<i>-</i>'}\\n🔐 Mot de passe défini\\n\\nConfirmer ?`;\n    return direct(recap, [[{ text: '✅ Oui' }, { text: '❌ Non' }]], 'reg_confirm', nd, 0);\n  }\n  if (currentStep === 'reg_confirm') {\n    if (msg === '✅ oui' || msg === 'oui') {\n      const sql = `INSERT IGNORE INTO vendeurs (telegram_chat_id, nom_boutique, description, telephone, adresse, cideasypay, tokeneasypay, password, statut) VALUES (${esc(chatId)}, ${esc(D.nom_boutique)}, ${esc(D.description)}, ${esc(D.telephone)}, ${esc(D.adresse)}, ${esc(D.cideasypay)}, ${esc(D.tokeneasypay)}, ${esc(D.password)}, 'en_attente')`;\n      return [{ json: { route: 'insert_vendeur', chatId, sessionId, userName, sql, nom_boutique: D.nom_boutique, saveSQL: mkSaveSQL(null, {}, 1) } }];\n    }\n    return direct('Inscription annulée.', MENU_NOT_AUTH, null, {}, 0);\n  }\n\n  // ═══════════════════════════════════════\n  // 4. Blocage non authentifié\n  // ═══════════════════════════════════════\n  if (!authenticated) {\n    return direct('🔒 Vous devez être connecté.\\nUtilisez 🔑 <b>Se connecter</b> ou 📝 <b>M\\'inscrire</b>.', MENU_NOT_AUTH, null, {}, 0);\n  }\n\n  // ═══════════════════════════════════════\n  // 5. Actions authentifiées\n  // ═══════════════════════════════════════\n  // --- Catégories ---\n  if (currentStep === 'cat_nom') {\n    if (msgRaw.length < 2) return direct('⚠️ Nom trop court.', [[{ text: '❌ Annuler' }]], 'cat_nom', D, authenticated);\n    const sql = `INSERT INTO categories_vendeur (vendeur_id, nom) SELECT id, ${esc(msgRaw)} FROM vendeurs WHERE telegram_chat_id = ${esc(chatId)} LIMIT 1`;\n    return toAgent(`__INSERT_CAT__\\nSQL:${sql}\\nNOM:${msgRaw}`, null, {}, authenticated);\n  }\n  if (currentStep === 'modify_cat_select') {\n    return direct(`✏️ Nouveau nom pour <b>${msgRaw}</b> :`, [[{ text: '❌ Annuler' }]], 'modify_cat_new_value', { catName: msgRaw }, authenticated);\n  }\n  if (currentStep === 'modify_cat_new_value') {\n    if (msgRaw.length < 2) return direct('⚠️ Nom trop court.', [[{ text: '❌ Annuler' }]], 'modify_cat_new_value', D, authenticated);\n    const sqlSel = `SELECT c.id FROM categories_vendeur c JOIN vendeurs v ON v.id=c.vendeur_id WHERE v.telegram_chat_id=${esc(chatId)} AND c.nom=${esc(D.catName)} LIMIT 1`;\n    const sqlUpd = `UPDATE categories_vendeur SET nom=${esc(msgRaw)} WHERE id=(SELECT id FROM (${sqlSel}) tmp)`;\n    return toAgent(`__UPDATE_CATEGORY__\\nSQL_SELECT:${sqlSel}\\nSQL_UPDATE:${sqlUpd}\\nNOM:${msgRaw}`, null, {}, authenticated);\n  }\n  if (currentStep === 'delete_cat_select') {\n    return direct(`🗑️ Supprimer <b>${msgRaw}</b> ?`, [[{ text: '✅ Oui, supprimer' }, { text: '❌ Non, annuler' }]], 'delete_cat_confirm', { catName: msgRaw }, authenticated);\n  }\n  if (currentStep === 'delete_cat_confirm') {\n    if (msg === '✅ oui, supprimer' || msg === 'oui') {\n      const sqlSel = `SELECT c.id FROM categories_vendeur c JOIN vendeurs v ON v.id=c.vendeur_id WHERE v.telegram_chat_id=${esc(chatId)} AND c.nom=${esc(D.catName)} LIMIT 1`;\n      const sqlDel = `DELETE FROM categories_vendeur WHERE id=(SELECT id FROM (${sqlSel}) tmp)`;\n      return toAgent(`__DELETE_CATEGORY__\\nSQL_SELECT:${sqlSel}\\nSQL_DELETE:${sqlDel}`, null, {}, authenticated);\n    }\n    return direct('Suppression annulée.', CAT_MENU, null, {}, authenticated);\n  }\n\n  // --- Produits ---\n  if (currentStep === 'prod_nom') {\n    if (msgRaw.length < 2) return direct('⚠️ Nom trop court.', [[{ text: '❌ Annuler' }]], 'prod_nom', D, authenticated);\n    return direct('📝 Description ? <i>(- pour passer)</i>', [[{ text: '-' }, { text: '❌ Annuler' }]], 'prod_desc', { ...D, prod_nom: msgRaw }, authenticated);\n  }\n  if (currentStep === 'prod_desc') {\n    return toCats('product', 'prod_cat_select', { ...D, prod_desc: msgRaw === '-' ? null : msgRaw }, authenticated);\n  }\n  if (currentStep === 'prod_cat_select') {\n    return direct('💵 Prix ($) ?', [[{ text: '❌ Annuler' }]], 'prod_prix', { ...D, categorie_nom: msgRaw }, authenticated);\n  }\n  if (currentStep === 'prod_prix') {\n    const prix = parseFloat(msgRaw.replace(',', '.'));\n    if (isNaN(prix) || prix <= 0) return direct('⚠️ Prix invalide.', [[{ text: '❌ Annuler' }]], 'prod_prix', D, authenticated);\n    return direct('📐 Taille ? <i>(- pour passer)</i>', [[{ text: '-' }, { text: '❌ Annuler' }]], 'prod_taille', { ...D, prod_prix: prix }, authenticated);\n  }\n  if (currentStep === 'prod_taille') {\n    const nd = { ...D, prod_taille: msgRaw === '-' ? null : msgRaw };\n    const catSub = nd.categorie_nom \n      ? `(SELECT id FROM categories_vendeur WHERE vendeur_id=(SELECT id FROM vendeurs WHERE telegram_chat_id=${esc(chatId)} LIMIT 1) AND nom=${esc(nd.categorie_nom)} LIMIT 1)` \n      : `(SELECT id FROM categories_vendeur WHERE vendeur_id=(SELECT id FROM vendeurs WHERE telegram_chat_id=${esc(chatId)} LIMIT 1) ORDER BY id LIMIT 1)`;\n    const sql = `INSERT INTO produits_vendeur (vendeur_id, categorie_id, nom, description, prix, taille) SELECT id, ${catSub}, ${esc(nd.prod_nom)}, ${esc(nd.prod_desc)}, ${nd.prod_prix}, ${esc(nd.prod_taille)} FROM vendeurs WHERE telegram_chat_id=${esc(chatId)} LIMIT 1`;\n    return toAgent(`__INSERT_PROD__\\nSQL:${sql}\\nNOM:${nd.prod_nom}\\nPRIX:${nd.prod_prix}`, null, {}, authenticated);\n  }\n  if (currentStep === 'modify_prod_select') {\n    return direct(`✏️ Modifier <b>${msgRaw}</b>\\n\\nQue modifier ?`, [[{ text: '📛 Nom' }, { text: '📝 Description' }], [{ text: '💵 Prix' }, { text: '📐 Taille' }], [{ text: '❌ Annuler' }]], 'modify_prod_field', { productName: msgRaw }, authenticated);\n  }\n  if (currentStep === 'modify_prod_field') {\n    const fieldMap = { '📛 nom':'nom','📝 description':'description','💵 prix':'prix','📐 taille':'taille','nom':'nom','description':'description','prix':'prix','taille':'taille' };\n    const field = fieldMap[msg];\n    if (!field) return direct('⚠️ Choisissez un champ.', [[{ text: '📛 Nom' }, { text: '📝 Description' }], [{ text: '💵 Prix' }, { text: '📐 Taille' }], [{ text: '❌ Annuler' }]], 'modify_prod_field', D, authenticated);\n    const labels = { nom:'Nom', description:'Description', prix:'Prix ($)', taille:'Taille' };\n    return direct(`Nouveau ${labels[field]} pour <b>${D.productName}</b> :`, [[{ text: '❌ Annuler' }]], 'modify_prod_value', { ...D, field }, authenticated);\n  }\n  if (currentStep === 'modify_prod_value') {\n    let value = msgRaw;\n    if (D.field === 'prix') {\n      const p = parseFloat(value.replace(',', '.'));\n      if (isNaN(p) || p <= 0) return direct('⚠️ Prix invalide.', [[{ text: '❌ Annuler' }]], 'modify_prod_value', D, authenticated);\n      value = String(p);\n    }\n    const sqlSel = `SELECT p.id FROM produits_vendeur p JOIN vendeurs v ON v.id=p.vendeur_id WHERE v.telegram_chat_id=${esc(chatId)} AND p.nom=${esc(D.productName)} LIMIT 1`;\n    const sqlUpd = `UPDATE produits_vendeur SET ${D.field}=${esc(value)} WHERE id=(SELECT id FROM (${sqlSel}) tmp)`;\n    return toAgent(`__UPDATE_PRODUCT__\\nSQL_SELECT:${sqlSel}\\nSQL_UPDATE:${sqlUpd}\\nNOM:${D.productName}`, null, {}, authenticated);\n  }\n  if (currentStep === 'delete_prod_select') {\n    return direct(`🗑️ Supprimer <b>${msgRaw}</b> ?`, [[{ text: '✅ Oui, supprimer' }, { text: '❌ Non, annuler' }]], 'delete_prod_confirm', { productName: msgRaw }, authenticated);\n  }\n  if (currentStep === 'delete_prod_confirm') {\n    if (msg === '✅ oui, supprimer' || msg === 'oui') {\n      const sqlSel = `SELECT p.id FROM produits_vendeur p JOIN vendeurs v ON v.id=p.vendeur_id WHERE v.telegram_chat_id=${esc(chatId)} AND p.nom=${esc(D.productName)} LIMIT 1`;\n      const sqlDel = `DELETE FROM produits_vendeur WHERE id=(SELECT id FROM (${sqlSel}) tmp)`;\n      return toAgent(`__DELETE_PRODUCT__\\nSQL_SELECT:${sqlSel}\\nSQL_DELETE:${sqlDel}`, null, {}, authenticated);\n    }\n    return direct('Suppression annulée.', PROD_MENU, null, {}, authenticated);\n  }\n\n  if (currentStep) {\n    return direct('Session réinitialisée.', MAIN_MENU, null, {}, authenticated);\n  }\n\n  if (msg === '👤 mon profil') return out('get_profile_direct', {}, null, {}, authenticated);\n  if (msg === '🗂️ mes catégories') return toCats('list', null, {}, authenticated);\n  if (msg === '📦 mes produits') return toProds('list', null, {}, authenticated);\n  if (msg === '➕ ajouter catégorie') return direct('🗂️ Nom de la catégorie ?', [[{ text: '❌ Annuler' }]], 'cat_nom', {}, authenticated);\n  if (msg === '➕ ajouter produit') return direct('📦 Nom du produit ?', [[{ text: '❌ Annuler' }]], 'prod_nom', {}, authenticated);\n  if (msg === '✏️ modifier produit') return toProds('modify', 'modify_prod_select', {}, authenticated);\n  if (msg === '🗑️ supprimer produit') return toProds('delete', 'delete_prod_select', {}, authenticated);\n  if (msg === '✏️ modifier catégorie') return toCats('modify', 'modify_cat_select', {}, authenticated);\n  if (msg === '🗑️ supprimer catégorie') return toCats('delete', 'delete_cat_select', {}, authenticated);\n\n  return toAgent(msgRaw, null, {}, authenticated);\n\n} catch (error) {\n  console.error('Erreur Router Navigation:', error);\n  const chatId = $('Normaliser Telegram')?.first()?.json?.chatId || 'inconnu';\n  return [{ json: {\n    route: 'direct',\n    chatId,\n    text: '⚠️ Une erreur interne est survenue. Session réinitialisée.',\n    keyboard: [[{ text: '🏠 Accueil' }]],\n    saveSQL: `DELETE FROM vendor_sessions WHERE chat_id = '${String(chatId).replace(/'/g, \"''\")}'`\n  }}];\n}"
+      },
+      "id": "d03bf6d1-78ee-433b-a01f-7ce2427c544f",
+      "name": "Router Navigation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -74336,
+        7728
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT step, data, authenticated FROM vendor_sessions WHERE chat_id = '{{ $('Normaliser Telegram').first().json.chatId }}'",
+        "options": {}
+      },
+      "id": "589d789d-1e92-4ba9-99a7-5d77ff54c684",
+      "name": "SQL Init & Read Session",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -74512,
+        7456
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id.toString() }}",
+              "type": "string"
+            },
+            {
+              "id": "t2",
+              "name": "userMessage",
+              "value": "={{ ($json.message.text ?? '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "t3",
+              "name": "userName",
+              "value": "={{ ($json.message.from.first_name ?? '') + ' ' + ($json.message.from.last_name ?? '') }}",
+              "type": "string"
+            },
+            {
+              "id": "t4",
+              "name": "sessionId",
+              "value": "=vendor_{{ $json.message.chat.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "63e53bdc-b930-4be5-a7cc-d7749f61ef0b",
+      "name": "Normaliser Telegram",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -74736,
+        7728
+      ]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "fb1ce27c-3626-4492-b051-90c5d1037a84",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -74944,
+        7728
+      ],
+      "webhookId": "vendeur-register-webhook",
+      "credentials": {
+        "telegramApi": {
+          "id": "XnIPoSTWRDLWT5rd",
+          "name": "EcomBot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {}
+      },
+      "id": "214714dd-389b-4b3c-a1a6-ffbce0c18c41",
+      "name": "SQL Insert Vendeur",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -72096,
+        8144
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId = $('Router Navigation').first().json.chatId;\nconst nom_boutique = $('Router Navigation').first().json.nom_boutique;\nconst result = $input.first().json;\n\nlet affectedRows = 0;\nif (Array.isArray(result)) {\n  affectedRows = result[0]?.affectedRows || 0;\n} else {\n  affectedRows = result.affectedRows || 0;\n}\n\nconst MENU_AUTH = [\n  [{ text: '👤 Mon profil' }, { text: '🗂️ Mes catégories' }],\n  [{ text: '📦 Mes produits' }, { text: '🔒 Se déconnecter' }]\n];\nconst MENU_NOT_AUTH = [\n  [{ text: '🔑 Se connecter' }, { text: \"📝 M'inscrire\" }]\n];\n\nif (affectedRows > 0) {\n  return [{ json: { \n    chatId, \n    text: `🎉 Boutique <b>${nom_boutique}</b> enregistrée !\\n⏳ En attente de validation.\\nVous êtes maintenant connecté.`, \n    keyboard: MENU_AUTH \n  }}];\n} else {\n  return [{ json: { \n    chatId, \n    text: \"⚠️ Vous êtes déjà inscrit. Utilisez le bouton Se connecter.\", \n    keyboard: MENU_NOT_AUTH \n  }}];\n}"
+      },
+      "id": "4608e430-9052-424a-be53-f1bed81fc2e4",
+      "name": "Handle Insert Vendeur",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -71904,
+        8144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {}
+      },
+      "id": "ae01378b-e1df-4182-a8a5-116e37f72038",
+      "name": "SQL Check Login",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -72096,
+        7936
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId = $('Router Navigation').first().json.chatId;\nconst result = $input.first().json;\n\nlet cnt = 0;\ntry {\n  cnt = Array.isArray(result) ? parseInt(result[0]?.cnt ?? 0) : parseInt(result.cnt ?? 0);\n} catch(e) { cnt = 0; }\n\nconst MENU_AUTH = [\n  [{ text: '👤 Mon profil' }, { text: '🗂️ Mes catégories' }],\n  [{ text: '📦 Mes produits' }, { text: '🔒 Se déconnecter' }]\n];\nconst MENU_NOT_AUTH = [\n  [{ text: '🔑 Se connecter' }, { text: \"📝 M'inscrire\" }]\n];\n\nconst chatIdEsc = String(chatId).replace(/'/g, \"''\");\nconst saveSQL = cnt > 0\n  ? `INSERT INTO vendor_sessions (chat_id, step, data, authenticated) VALUES ('${chatIdEsc}', NULL, '{}', 1) ON DUPLICATE KEY UPDATE step = NULL, data = '{}', authenticated = 1`\n  : '';\n\nreturn [{ json: {\n  chatId,\n  text: cnt > 0 ? '✅ Connecté avec succès !' : '❌ Identifiant ou mot de passe incorrect.',\n  keyboard: cnt > 0 ? MENU_AUTH : MENU_NOT_AUTH,\n  saveSQL\n}}];"
+      },
+      "id": "4b48bc11-1847-4dca-93fc-7ce93fe146e2",
+      "name": "Handle Login Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -71904,
+        7936
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.saveSQL ? $json.saveSQL : 'SELECT 1' }}",
+        "options": {}
+      },
+      "id": "65f73aeb-8c22-4224-adf0-c402f3fafee2",
+      "name": "SQL Update Session",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -71232,
+        7328
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const loginData = $('Handle Login Result').first().json;\nreturn [{ json: {\n  chatId: loginData.chatId,\n  text: loginData.text,\n  keyboard: loginData.keyboard\n}}];"
+      },
+      "id": "9c9901d4-a04b-41cc-a995-f0a5b9f508b8",
+      "name": "Restaurer Après Login",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -70992,
+        7328
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT c.nom FROM categories_vendeur c JOIN vendeurs v ON v.id = c.vendeur_id WHERE v.telegram_chat_id = \\'' + $input.first().json.chatId + '\\' ORDER BY c.nom' }}",
+        "options": {}
+      },
+      "id": "6e38d7bf-7da6-402e-9235-4dfc09902892",
+      "name": "SQL Catégories Direct",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -72096,
+        8336
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId  = $('Normaliser Telegram').first().json.chatId;\nconst catMode = $('Router Navigation').first().json.catMode || 'list';\nconst rows    = $input.all().map(i => i.json).filter(r => r && r.nom);\n\nconst CAT_MENU = [\n  [{ text: '➕ Ajouter catégorie' }, { text: '✏️ Modifier catégorie' }],\n  [{ text: '🗑️ Supprimer catégorie' }, { text: '🏠 Accueil' }]\n];\n\nif (catMode === 'list') {\n  if (!rows.length) return [{ json: { chatId, text: '🗂️ Aucune catégorie.\\nUtilisez ➕ Ajouter catégorie.', keyboard: CAT_MENU } }];\n  return [{ json: { chatId, text: '🗂️ <b>Vos catégories :</b>\\n\\n' + rows.map(c => `• <b>${c.nom}</b>`).join('\\n'), keyboard: CAT_MENU } }];\n}\n\nif (!rows.length) return [{ json: { chatId, text: '⚠️ Aucune catégorie. Créez-en une d\\'abord.', keyboard: [[{ text: '➕ Ajouter catégorie' }], [{ text: '🏠 Accueil' }]] } }];\n\nconst buttons = [...rows.map(r => [{ text: r.nom }]), [{ text: '❌ Annuler' }]];\nconst text = catMode === 'modify' ? '✏️ Choisissez la catégorie à modifier :'\n           : catMode === 'delete' ? '🗑️ Choisissez la catégorie à supprimer :'\n           : '🗂️ Choisissez la <b>catégorie</b> du produit :';\nreturn [{ json: { chatId, text, keyboard: buttons } }];"
+      },
+      "id": "6c568069-af87-4269-a171-2f03ef79f88c",
+      "name": "Handle Catégories Direct",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -71904,
+        8336
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT p.nom, p.prix, p.description, p.taille FROM produits_vendeur p JOIN vendeurs v ON v.id = p.vendeur_id WHERE v.telegram_chat_id = \\'' + $input.first().json.chatId + '\\' ORDER BY p.nom' }}",
+        "options": {}
+      },
+      "id": "1d80ae8d-5e91-43cb-826e-afb5d14e731f",
+      "name": "SQL Produits Direct",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -72096,
+        8544
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId   = $('Normaliser Telegram').first().json.chatId;\nconst prodMode = $('Router Navigation').first().json.prodMode || 'list';\nconst rows     = $input.all().map(i => i.json).filter(r => r && r.nom);\n\nconst PROD_MENU = [\n  [{ text: '➕ Ajouter produit' }, { text: '✏️ Modifier produit' }],\n  [{ text: '🗑️ Supprimer produit' }, { text: '🏠 Accueil' }]\n];\n\nif (prodMode === 'list') {\n  if (!rows.length) return [{ json: { chatId, text: '📦 Aucun produit.\\nUtilisez ➕ Ajouter produit.', keyboard: PROD_MENU } }];\n  const text = '📦 <b>Vos produits :</b>\\n\\n' + rows.map(p =>\n    `• <b>${p.nom}</b> — ${p.prix} $` +\n    (p.description ? `\\n  <i>${p.description}</i>` : '') +\n    (p.taille ? ` | 📐 ${p.taille}` : '')\n  ).join('\\n\\n');\n  return [{ json: { chatId, text, keyboard: PROD_MENU } }];\n}\n\nif (!rows.length) return [{ json: { chatId, text: '⚠️ Aucun produit. Ajoutez-en un d\\'abord.', keyboard: [[{ text: '➕ Ajouter produit' }], [{ text: '🏠 Accueil' }]] } }];\n\nconst buttons = [...rows.map(r => [{ text: r.nom }]), [{ text: '❌ Annuler' }]];\nconst text = prodMode === 'modify' ? '✏️ Choisissez le produit à modifier :' : '🗑️ Choisissez le produit à supprimer :';\nreturn [{ json: { chatId, text, keyboard: buttons } }];"
+      },
+      "id": "980b7d8c-ab3b-48a1-bd5f-ba5ff49ddd75",
+      "name": "Handle Produits Direct",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -71904,
+        8544
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT nom_boutique, description, telephone, adresse, statut FROM vendeurs WHERE telegram_chat_id = \\'' + $input.first().json.chatId + '\\' LIMIT 1' }}",
+        "options": {}
+      },
+      "id": "3ac25801-4166-4310-89a8-9082341bfcbd",
+      "name": "SQL Profil Vendeur",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -72096,
+        8736
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId = $('Normaliser Telegram').first().json.chatId;\nconst rows   = $input.all().map(i => i.json);\nconst d      = rows.find(r => r && (r.nom_boutique || r.statut || r.telephone || r.adresse || r.description));\n\nconst MAIN_MENU = [\n  [{ text: '👤 Mon profil' }, { text: '🗂️ Mes catégories' }],\n  [{ text: '📦 Mes produits' }, { text: '🔒 Se déconnecter' }]\n];\n\nif (!d) return [{ json: { chatId, text: \"❌ Aucun compte. Inscrivez-vous d'abord.\", keyboard: [[{ text: \"📝 M'inscrire\" }], [{ text: '🔑 Se connecter' }]] } }];\n\nfunction clean(v) { return (v === null || v === undefined || String(v).trim() === '') ? '<i>-</i>' : String(v).trim(); }\n\nconst rawStatus = String(d.statut || '').trim().toLowerCase();\nconst statusMap = {\n  'en_attente': '⏳ <b>en_attente</b>',\n  'approuvé':   '✅ <b>approuvé</b>',\n  'approuve':   '✅ <b>approuvé</b>',\n  'rejeté':     '❌ <b>rejeté</b>',\n  'rejete':     '❌ <b>rejeté</b>'\n};\nconst statut = statusMap[rawStatus] || '❓ <b>inconnu</b>';\n\nreturn [{ json: { chatId, text: `👤 <b>Mon Profil</b>\\n\\n🏪 <b>${clean(d.nom_boutique)}</b>\\n📝 ${clean(d.description)}\\n📞 ${clean(d.telephone)}\\n📍 ${clean(d.adresse)}\\nStatut : ${statut}`, keyboard: MAIN_MENU } }];"
+      },
+      "id": "6fda9644-447b-415f-99d6-5887a5e0c576",
+      "name": "Handle Profil Vendeur",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -71904,
+        8736
+      ]
+    }
+  ],
+  "connections": {
+    "Parser Réponse Agent": {
+      "main": [
+        [
+          {
+            "node": "Envoi Texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Tool MySQL": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Ecom",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mémoire Session": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent Ecom",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Ecom",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Ecom": {
+      "main": [
+        [
+          {
+            "node": "Parser Réponse Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Route": {
+      "main": [
+        [
+          {
+            "node": "Envoi Texte",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent Ecom",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Catégories Direct",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Produits Direct",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Profil Vendeur",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Insert Vendeur",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Check Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restaurer Données": {
+      "main": [
+        [
+          {
+            "node": "Switch Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Sauver État": {
+      "main": [
+        [
+          {
+            "node": "Restaurer Données",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router Navigation": {
+      "main": [
+        [
+          {
+            "node": "SQL Sauver État",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Init & Read Session": {
+      "main": [
+        [
+          {
+            "node": "Router Navigation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliser Telegram": {
+      "main": [
+        [
+          {
+            "node": "SQL Init & Read Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normaliser Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Insert Vendeur": {
+      "main": [
+        [
+          {
+            "node": "Handle Insert Vendeur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Insert Vendeur": {
+      "main": [
+        [
+          {
+            "node": "Envoi Texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Check Login": {
+      "main": [
+        [
+          {
+            "node": "Handle Login Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Login Result": {
+      "main": [
+        [
+          {
+            "node": "SQL Update Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Update Session": {
+      "main": [
+        [
+          {
+            "node": "Restaurer Après Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restaurer Après Login": {
+      "main": [
+        [
+          {
+            "node": "Envoi Texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Catégories Direct": {
+      "main": [
+        [
+          {
+            "node": "Handle Catégories Direct",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Catégories Direct": {
+      "main": [
+        [
+          {
+            "node": "Envoi Texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Produits Direct": {
+      "main": [
+        [
+          {
+            "node": "Handle Produits Direct",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Produits Direct": {
+      "main": [
+        [
+          {
+            "node": "Envoi Texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Profil Vendeur": {
+      "main": [
+        [
+          {
+            "node": "Handle Profil Vendeur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Profil Vendeur": {
+      "main": [
+        [
+          {
+            "node": "Envoi Texte",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "28ba8da7efe41ef60114b1f60ca46803f555a43a3988061843f330213252ba86"
+  }
+}

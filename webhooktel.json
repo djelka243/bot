@@ -1,0 +1,362 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mh-beauty-ipn",
+        "options": {}
+      },
+      "id": "6b4dae5c-d66f-4947-99b8-40842ec493e4",
+      "name": "Webhook IPN Listener",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -752,
+        96
+      ],
+      "webhookId": "58884659-3d9f-47cf-8514-6754a339c3ee"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ipn1",
+              "name": "order_ref",
+              "value": "={{ $json.body.transaction.order_ref }}",
+              "type": "string"
+            },
+            {
+              "id": "ipn2",
+              "name": "payment_status",
+              "value": "={{ $json.body.payment.status }}",
+              "type": "string"
+            },
+            {
+              "id": "ipn3",
+              "name": "payment_channel",
+              "value": "={{ $json.body.payment.channel }}",
+              "type": "string"
+            },
+            {
+              "id": "ipn4",
+              "name": "chatId",
+              "value": "={{ $json.body.transaction.order_ref.split('-')[1] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "73dbdeca-4936-47d6-9ace-9bcb38d34dd4",
+      "name": "IPN - Extraire Données",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -496,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "check-success",
+              "leftValue": "={{ $json.payment_status }}",
+              "rightValue": "SUCCESS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4e5ac98a-eb81-43e0-962f-6fcfd8e901a9",
+      "name": "IPN - Succès ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -256,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-cancel",
+              "leftValue": "={{ $json.payment_status }}",
+              "rightValue": "CANCELED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4342d577-83b2-4c6f-865a-62ba64890d97",
+      "name": "IPN - Annulé ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE commandes SET statut = 'confirmee' WHERE numero_commande = '{{ $json.order_ref }}';",
+        "options": {}
+      },
+      "id": "eec7d7cf-be12-4763-8294-3cecabce63ef",
+      "name": "MySQL - Marquer Confirmée",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE commandes SET statut = 'annulee' WHERE numero_commande = '{{ $json.order_ref }}';",
+        "options": {}
+      },
+      "id": "286c6c74-de4c-4cb7-bf48-aa7a32a3e196",
+      "name": "MySQL - Marquer Annulée",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        256,
+        192
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE commandes SET statut = 'annulee' WHERE numero_commande = '{{ $json.order_ref }}';",
+        "options": {}
+      },
+      "id": "36207cde-2fbd-4840-b592-c945e6d0fc92",
+      "name": "MySQL - Marquer Erreur",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        240,
+        384
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('IPN - Extraire Données').item.json.chatId }}",
+        "text": "=✅ *Paiement confirmé !*\n\nVotre commande `{{ $('IPN - Extraire Données').item.json.order_ref }}` est validée via *{{ $('IPN - Extraire Données').item.json.payment_channel }}*.\nMerci pour votre achat ! Notre équipe prépare votre colis 🎁",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "appendAttribution": false
+        }
+      },
+      "id": "0ecc9d6b-8641-4f3f-bebd-3d12b8843376",
+      "name": "Telegram - Notif Succès",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        0
+      ],
+      "webhookId": "e39278ee-49e9-4c76-ab66-d05c48c3dc98",
+      "credentials": {
+        "telegramApi": {
+          "id": "8z9m7oySTithfm7m",
+          "name": "Mh beauty"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('IPN - Extraire Données').item.json.chatId }}",
+        "text": "=❌ *Paiement annulé*\n\nVous avez annulé le paiement pour la commande `{{ $('IPN - Extraire Données').item.json.order_ref }}`.\n\nSi c'est une erreur, tapez /commander pour recommencer 🔄",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "appendAttribution": false
+        }
+      },
+      "id": "7fd0120e-57c3-4864-a949-413008abab0a",
+      "name": "Telegram - Notif Annulation",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        192
+      ],
+      "webhookId": "4c4b8b2a-94e9-4d78-8670-9c72ca877815",
+      "credentials": {
+        "telegramApi": {
+          "id": "8z9m7oySTithfm7m",
+          "name": "Mh beauty"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('IPN - Extraire Données').item.json.chatId }}",
+        "text": "=⚠️ *Problème de paiement*\n\nUne erreur est survenue pour la commande `{{ $('IPN - Extraire Données').item.json.order_ref }}`.\nStatut reçu : `{{ $('IPN - Extraire Données').item.json.payment_status }}`\n\nContactez notre support si le problème persiste.",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "appendAttribution": false
+        }
+      },
+      "id": "dda48337-c9ec-4af5-97a4-9553bdcc0169",
+      "name": "Telegram - Notif Erreur",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        384
+      ],
+      "webhookId": "713ca397-2147-4e6d-81d9-b112bcf07999",
+      "credentials": {
+        "telegramApi": {
+          "id": "8z9m7oySTithfm7m",
+          "name": "Mh beauty"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook IPN Listener": {
+      "main": [
+        [
+          {
+            "node": "IPN - Extraire Données",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IPN - Extraire Données": {
+      "main": [
+        [
+          {
+            "node": "IPN - Succès ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IPN - Succès ?": {
+      "main": [
+        [
+          {
+            "node": "MySQL - Marquer Confirmée",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IPN - Annulé ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IPN - Annulé ?": {
+      "main": [
+        [
+          {
+            "node": "MySQL - Marquer Annulée",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MySQL - Marquer Erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL - Marquer Confirmée": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Notif Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL - Marquer Annulée": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Notif Annulation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL - Marquer Erreur": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Notif Erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "28ba8da7efe41ef60114b1f60ca46803f555a43a3988061843f330213252ba86"
+  }
+}

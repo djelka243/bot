@@ -1,0 +1,351 @@
+{ 
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "6d2e1381-9ed2-42cf-b769-e2479e582a8c",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -17264,
+        8528
+      ],
+      "webhookId": "03a3f63c-f604-4b8a-9b66-fca037f215e1",
+      "credentials": {
+        "telegramApi": {
+          "id": "8z9m7oySTithfm7m",
+          "name": "Mh beauty"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tg1",
+              "name": "channel",
+              "value": "telegram",
+              "type": "string"
+            },
+            {
+              "id": "tg2",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id.toString() }}",
+              "type": "string"
+            },
+            {
+              "id": "tg3",
+              "name": "userMessage",
+              "value": "={{ $json.message.text ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "tg4",
+              "name": "userName",
+              "value": "={{ ($json.message.from.first_name ?? '') + ' ' + ($json.message.from.last_name ?? '') }}",
+              "type": "string"
+            },
+            {
+              "id": "tg5",
+              "name": "sessionId",
+              "value": "=tg_{{ $json.message.chat.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "84291c64-a923-4dc9-af24-3bfc4ff44780",
+      "name": "Normaliser Telegram",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -17008,
+        8528
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Client: {{ $json.userName }}\nCanal: {{ $json.channel }}\nMessage: {{ $json.userMessage }}\nchatId: {{ $json.chatId }}",
+        "options": {
+          "systemMessage": "Tu es l'assistante virtuelle de MH Beauty & Creation. Tu es un agent déterministe connecté à MySQL. Réponses courtes (max 100 mots), chaleureuses, émojis. Langue : Français.\n\n## RÈGLES ABSOLUES :\n- Interdiction d'inventer des données (prix, ID, image). Si SQL ne renvoie rien, l'élément n'existe pas.\n- Utilise UNIQUEMENT ces tables : categories(id, name, slug), produits(id, name, description, price, taille, reduction, categorie_id, image), commandes(id, nom, prenom, telephone, adresse, total, produits, statut, numero_commande).\n- Recherche SQL toujours avec LOWER() et LIKE '%mot_singulier%'.\n\n## ALGORITHME DE FLUX :\n1. ACCUEIL (1er message) : Exécute 'SELECT id, name FROM categories;' et présente les catégories réelles avec un accueil chaleureux.\n2. RECHERCHE : Si le client tape un mot-clé, cherche d'abord dans les catégories. Si trouvé, affiche ses produits (LIMIT 6). Sinon, cherche dans le nom/description des produits (LIMIT 6).\n3. FICHE PRODUIT & PHOTO : Dès qu'un produit précis est ciblé, fais un SELECT de ses infos. Appelle IMMÉDIATEMENT l'outil 'Envoyer Photo Telegram' avec le chatId du client et l'URL exacte de la colonne 'image'. Valide ensuite la quantité.\n4. COLLECTE INFOS : Récupère dans l'ordre : Nom, Prénom, Téléphone (10 chiffres). Affiche le récapitulatif avec le prix total (prix x quantité) et demande de confirmer en écrivant exactement 'OUI'.\n5. PAIEMENT & INSERT : Si le client dit 'OUI', appelle l'outil 'Initier Paiement MH Beauty'. Utilise UNIQUEMENT 'transaction.order_ref' comme numero_commande pour faire l'INSERT INTO commandes. En cas d'erreur ER_DUP_ENTRY, ne réessaie pas l'INSERT, confirme juste que c'est enregistré."
+        }
+      },
+      "id": "7f19f616-0284-4736-b30b-42f844184aee",
+      "name": "Agent MH Beauty IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -16768,
+        8528
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "6544c831-caba-4e65-8ff6-8b1ace28582c",
+      "name": "Gemini 2.5 Flash",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -17008,
+        8864
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "3DJGwxh9rxeLjCcZ",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 15
+      },
+      "id": "b8adf38f-d367-4c34-a4b6-0b1baed020c6",
+      "name": "Mémoire Session",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -16752,
+        8864
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Exécute TOUTE requête SQL (SELECT, INSERT IGNORE) sur la base de données MySQL de MH Beauty. Tu DOIS utiliser cet outil pour lister les catégories, chercher des produits et enregistrer les commandes. Fournir la requête SQL complète dans l'argument 'query'.",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('query') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySqlTool",
+      "typeVersion": 2.5,
+      "position": [
+        -16336,
+        8864
+      ],
+      "id": "5aeaccfc-ba82-4e42-a88a-b4404ff6624d",
+      "name": "Execute a SQL query in MySQL",
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Initie un paiement pour une commande MH Beauty. Appelle avec : client_phone, client_nom, produit_nom, montant, chatId. IMPORTANT : la réponse contient transaction.order_ref (le numéro de commande à utiliser dans l'INSERT).",
+        "method": "POST",
+        "url": "https://mhbeauty.online/api/v1/paiement/initier",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_phone",
+              "value": "={{ $fromAI('client_phone') }}"
+            },
+            {
+              "name": "client_nom",
+              "value": "={{ $fromAI('client_nom') }}"
+            },
+            {
+              "name": "produit_nom",
+              "value": "={{ $fromAI('produit_nom') }}"
+            },
+            {
+              "name": "montant",
+              "value": "={{ $fromAI('montant') }}"
+            },
+            {
+              "name": "order_ref",
+              "value": "=CMD-{{ $fromAI('chatId') }}-{{ Date.now() }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "1a35abfd-ddc6-404a-8c16-a6b291a961c1",
+      "name": "Initier Paiement MH Beauty",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -16544,
+        8864
+      ]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Envoie obligatoirement l'image d'un produit dans le chat Telegram du client. Demande obligatoirement en arguments : chatId (identifiant du chat reçu) et photo_url (l'URL exacte récupérée de la colonne image en base de données).",
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8700877567:AAEhsYtGO3s5UShEl9gV7nHiiYiTMXStDtI/sendPhoto",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chat_id",
+              "value": "={{ $fromAI('chatId') }}"
+            },
+            {
+              "name": "photo",
+              "value": "={{ $fromAI('photo_url') }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "39b445b1-4861-4847-b58a-df14be4aae28",
+      "name": "Envoyer Photo Telegram",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -16144,
+        8864
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "f78d3053-a959-4bd8-9aaf-cdd356d6872f",
+      "name": "Réponse Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -16416,
+        8528
+      ],
+      "webhookId": "a68bfb12-0c18-4235-88fc-bcb956e1e8b7",
+      "credentials": {
+        "telegramApi": {
+          "id": "8z9m7oySTithfm7m",
+          "name": "Mh beauty"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normaliser Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliser Telegram": {
+      "main": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent MH Beauty IA": {
+      "main": [
+        [
+          {
+            "node": "Réponse Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mémoire Session": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query in MySQL": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initier Paiement MH Beauty": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envoyer Photo Telegram": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent MH Beauty IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "28ba8da7efe41ef60114b1f60ca46803f555a43a3988061843f330213252ba86"
+  }
+}

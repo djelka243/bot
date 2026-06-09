@@ -1,0 +1,421 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "3641d7e3-f848-4fc8-902d-3bc84b8bb5a6",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [-4704, 800],
+      "webhookId": "marketplace_working",
+      "credentials": { "telegramApi": { "id": "3JhDxfrSgqnknziN", "name": "Bot Achat" } }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "name": "chatId", "value": "={{ $json.message.chat.id.toString() }}", "type": "string" },
+            { "name": "userMessage", "value": "={{ ($json.message.text ?? '').trim() }}", "type": "string" },
+            { "name": "userName", "value": "={{ ($json.message.from.first_name ?? '') + ' ' + ($json.message.from.last_name ?? '') }}", "type": "string" },
+            { "name": "sessionId", "value": "=buyer_{{ $json.message.chat.id }}", "type": "string" },
+            { "name": "orderRef", "value": "=CMD-{{ $json.message.chat.id }}-{{ Date.now() }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e339b20f-ccc7-4c2b-8412-233d72661101",
+      "name": "Normaliser",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-4464, 800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst msg = input.userMessage ?? '';\nconst chatId = input.chatId;\nconst H = '\\u200B';\n\nlet routeTo = 'agent';\nlet vendorId = '';\nlet catId = '';\nlet offset = 0;\nlet prodId = '';\nlet price = '';\n\n// Boutons avec ID caché\nif (msg.startsWith('🏪 ') && msg.includes(H)) {\n  vendorId = msg.split(H).pop();\n  routeTo = 'categories';\n} else if (msg.startsWith('📂 ') && msg.includes(H)) {\n  const parts = msg.split(H);\n  if (parts.length >= 3) {\n    catId = parts[1];\n    vendorId = parts[2];\n    routeTo = 'products';\n  }\n} else if (msg.startsWith('📦 ') && msg.includes(H)) {\n  const parts = msg.split(H);\n  if (parts.length >= 5) {\n    prodId = parts[1];\n    catId = parts[2];\n    vendorId = parts[3];\n    price = parts[4];\n    routeTo = 'productDetail';\n  }\n} else if ((msg.startsWith('⬅️ Précédente') || msg.startsWith('➡️ Suivante')) && msg.includes(H)) {\n  const parts = msg.split(H);\n  if (parts.length >= 4) {\n    catId = parts[1];\n    offset = parseInt(parts[2], 10) || 0;\n    vendorId = parts[3];\n    routeTo = 'products';\n  }\n} else if (msg.startsWith('⬅️ Retour catégorie') && msg.includes(H)) {\n  const parts = msg.split(H);\n  if (parts.length >= 4) {\n    catId = parts[1];\n    offset = parseInt(parts[2], 10) || 0;\n    vendorId = parts[3];\n    routeTo = 'products';\n  }\n} else if (msg.startsWith('🛒 Commander : ') && msg.includes(H)) {\n  const parts = msg.split(H);\n  if (parts.length >= 3) {\n    prodId = parts[1];\n    price = parts[2];\n    routeTo = 'agent';\n  }\n} else if (msg === '🏠 Accueil' || msg === '/start') {\n  routeTo = 'vendors';\n}\n\nreturn [{ json: {\n  chatId, userMessage: msg, userName: input.userName,\n  sessionId: input.sessionId, orderRef: input.orderRef,\n  routeTo, vendorId, catId, offset: offset.toString(), prodId, price\n}}];"
+      },
+      "id": "router_navigation",
+      "name": "Router Navigation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-4224, 800]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.routeTo }}", "rightValue": "vendors", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.routeTo }}", "rightValue": "categories", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.routeTo }}", "rightValue": "products", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.routeTo }}", "rightValue": "productDetail", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.routeTo }}", "rightValue": "agent", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch_route",
+      "name": "Switch Route",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [-3984, 800]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, nom_boutique FROM vendeurs WHERE statut IN ('approuvé', 'approuve') ORDER BY nom_boutique",
+        "options": {}
+      },
+      "id": "sql_vendeurs",
+      "name": "SQL Vendeurs",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [-3504, 640],
+      "alwaysOutputData": true,
+      "credentials": { "mySql": { "id": "MUkAJndyHJjTja6C", "name": "bot" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT id, nom FROM categories_vendeur WHERE vendeur_id = ' + Number($json.vendorId || 0) + ' ORDER BY nom' }}",
+        "options": {}
+      },
+      "id": "sql_categories",
+      "name": "SQL Categories",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [-3504, 800],
+      "alwaysOutputData": true,
+      "credentials": { "mySql": { "id": "MUkAJndyHJjTja6C", "name": "bot" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT p.id, p.nom, p.prix, COUNT(*) OVER() AS _total FROM produits_vendeur p WHERE p.categorie_id = ' + Number($json.catId || 0) + ' ORDER BY p.id LIMIT 5 OFFSET ' + Number($json.offset || 0) }}",
+        "options": {}
+      },
+      "id": "sql_produits",
+      "name": "SQL Produits",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [-3504, 960],
+      "alwaysOutputData": true,
+      "credentials": { "mySql": { "id": "MUkAJndyHJjTja6C", "name": "bot" } }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT p.id, p.nom, p.description, p.prix, p.taille, p.categorie_id, pi.url_image AS photo_url FROM produits_vendeur p LEFT JOIN produit_image pi ON pi.produit_id = p.id WHERE p.id = ' + Number($json.prodId || 0) + ' LIMIT 1' }}",
+        "options": {}
+      },
+      "id": "sql_detail_produit",
+      "name": "SQL Detail Produit",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [-3504, 1120],
+      "alwaysOutputData": true,
+      "credentials": { "mySql": { "id": "MUkAJndyHJjTja6C", "name": "bot" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json).filter(v => v.id && v.nom_boutique);\nconst nav = $('Router Navigation').first().json;\nconst H = '\\u200B';\n\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, sendType: 'text', text: 'Aucune boutique approuvée disponible.', keyboard: [[{ text: '🏠 Accueil' }]] } }];\n}\n\nconst keyboard = rows.map(v => [{ text: '🏪 ' + v.nom_boutique + H + v.id }]);\nkeyboard.push([{ text: '🏠 Accueil' }]);\n\nreturn [{ json: { chatId: nav.chatId, sendType: 'text', text: 'Choisissez une boutique :', keyboard } }];"
+      },
+      "id": "handle_vendeurs",
+      "name": "Handle Vendeurs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3104, 640]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json).filter(c => c.id && c.nom);\nconst nav = $('Router Navigation').first().json;\nconst vendorId = nav.vendorId;\nconst H = '\\u200B';\n\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, sendType: 'text', text: 'Aucune catégorie pour ce vendeur.', keyboard: [[{ text: '🏠 Accueil' }]] } }];\n}\n\nconst keyboard = rows.map(c => [{ text: '📂 ' + c.nom + H + c.id + H + vendorId }]);\nkeyboard.push([{ text: '🏠 Accueil' }]);\n\nreturn [{ json: { chatId: nav.chatId, sendType: 'text', text: 'Choisissez une catégorie :', keyboard } }];"
+      },
+      "id": "handle_categories",
+      "name": "Handle Categories",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3104, 800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json).filter(p => p.id && p.nom);\nconst nav = $('Router Navigation').first().json;\nconst offset = parseInt(nav.offset || '0', 10);\nconst catId = nav.catId;\nconst vendorId = nav.vendorId;\nconst total = rows.length ? Number(rows[0]._total || rows.length) : 0;\nconst H = '\\u200B';\n\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, sendType: 'text', text: 'Aucun produit dans cette catégorie.', keyboard: [[{ text: '🏠 Accueil' }]] } }];\n}\n\nconst keyboard = rows.map(p => [{ text: '📦 ' + p.nom + H + p.id + H + catId + H + vendorId + H + p.prix }]);\n\nconst navRow = [];\nif (offset > 0) {\n  navRow.push({ text: '⬅️ Précédente' + H + catId + H + (offset - 5) + H + vendorId });\n}\nif (offset + 5 < total) {\n  navRow.push({ text: '➡️ Suivante' + H + catId + H + (offset + 5) + H + vendorId });\n}\nif (navRow.length) keyboard.push(navRow);\nkeyboard.push([{ text: '🏠 Accueil' }]);\n\nconst page = Math.floor(offset / 5) + 1;\nconst totalPages = Math.ceil(total / 5);\nreturn [{ json: { chatId: nav.chatId, sendType: 'text', text: 'Produits page ' + page + '/' + totalPages + ' :', keyboard } }];"
+      },
+      "id": "handle_produits",
+      "name": "Handle Produits",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3104, 960]
+    },
+    {
+      "parameters": {
+        "jsCode": "const BASE_URL = 'https://votre-domaine.com/storage/';\nconst nav = $('Router Navigation').first().json;\nconst rows = $input.all().map(i => i.json).filter(row => row.id && row.nom);\nconst p = rows[0];\nconst H = '\\u200B';\n\nif (!p) {\n  return [{ json: { chatId: nav.chatId, sendType: 'text', text: 'Produit introuvable.', keyboard: [[{ text: '🏠 Accueil' }]] } }];\n}\n\nconst rawUrl = (p.photo_url || '').trim();\nconst photoUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : BASE_URL + rawUrl.replace(/^\\//, '')) : '';\nconst caption = p.nom + '\\n\\n' + (p.description || '') + '\\n\\nPrix: ' + p.prix + '$\\nTaille: ' + (p.taille || 'N/A');\n\nconst orderText = '🛒 Commander : ' + p.nom + H + p.id + H + p.prix;\nconst backText = '⬅️ Retour catégorie' + H + p.categorie_id + H + '0' + H + nav.vendorId;\n\nconst keyboard = [\n  [{ text: orderText }],\n  [{ text: backText }, { text: '🏠 Accueil' }]\n];\n\nreturn [{ json: { chatId: nav.chatId, sendType: photoUrl ? 'photo' : 'text', text: caption, photoUrl, keyboard } }];"
+      },
+      "id": "handle_detail_produit",
+      "name": "Handle Detail Produit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3104, 1120]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.sendType }}", "rightValue": "photo", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.sendType }}", "rightValue": "text", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "photo_ou_texte",
+      "name": "Photo ou Texte",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [-2704, 800]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot8731099222:AAEsRxWLfDLdyxs37Tevzgqqwnxdxo6arXM/sendPhoto",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "chat_id", "value": "={{ $json.chatId }}" },
+            { "name": "photo", "value": "={{ $json.photoUrl }}" },
+            { "name": "caption", "value": "={{ $json.text }}" },
+            { "name": "reply_markup", "value": "={{ JSON.stringify({ keyboard: $json.keyboard, resize_keyboard: true, one_time_keyboard: false }) }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "envoi_photo",
+      "name": "Envoi Photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-2304, 704]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot8731099222:AAEsRxWLfDLdyxs37Tevzgqqwnxdxo6arXM/sendMessage",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "chat_id", "value": "={{ $json.chatId }}" },
+            { "name": "text", "value": "={{ $json.text }}" },
+            { "name": "reply_markup", "value": "={{ JSON.stringify({ keyboard: $json.keyboard, resize_keyboard: true, one_time_keyboard: false }) }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "envoi_texte",
+      "name": "Envoi Texte",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-2304, 896]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Client: {{ $json.userName }}\nMessage: {{ $json.userMessage }}\nchatId: {{ $json.chatId }}\norderRef: {{ $json.orderRef }}\nvendorId: {{ $json.vendorId }}\nprodId: {{ $json.prodId }}\nprice: {{ $json.price }}",
+        "options": {
+          "systemMessage": "Tu es l'assistant de la marketplace. Réponds en français, ≤80 mots, émojis. Prix en dollars ($).\n\nSCHÉMA DB:\n- vendeurs(id, nom_boutique, cid, token, statut)\n- categories_vendeur(id, nom, vendeur_id)\n- produits_vendeur(id, nom, description, prix, taille, categorie_id)\n- produit_image(id, url_image, produit_id)\n- commandes(id, chat_id, nom, prenom, telephone, adresse, total, produits, statut, numero_commande, produit_id, vendeur_id)\n\nRÈGLES STRICTES :\n- Utilise l'outil SQL pour toute information. N'invente jamais un produit, prix ou image.\n- Si SELECT retourne 0 ligne → réponds 'produit/catégorie introuvable'.\n\nCOMPORTEMENT :\n- Quand le client clique sur '🛒 Commander : ...' (le message contient le séparateur \\u200B), tu as déjà prodId, vendorId, price dans les données fournies. Tu dois collecter : Quantité → Nom → Prénom → Téléphone (10 chiffres) → Adresse. Puis récapitulatif avec total (quantité * price). Attends OUI pour confirmer.\n- Sur OUI, avant d'insérer la commande, récupère le cid et le token du vendeur (SELECT cid, token FROM vendeurs WHERE id = vendorId).\n- Ensuite appelle l'outil 'initier_paiement_easypay' avec les paramètres : cid, token, client_phone (le téléphone collecté), montant (total), orderRef (fourni).\n- Après la réponse de l'API de paiement, insère la commande dans la table commandes avec TOUTES les colonnes : chat_id, nom, prenom, telephone, adresse, total, produits (nom du produit + qty), statut = 'en_attente', numero_commande = orderRef, produit_id = prodId, vendeur_id = vendorId.\n- Confirme la commande au client avec le numéro de commande.\n\nOUTILS DISPONIBLES :\n- execute_sql (query)\n- initier_paiement_easypay (cid, token, client_phone, montant, orderRef)"
+        }
+      },
+      "id": "agent_ia",
+      "name": "Agent Marketplace IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [-3360, 1400]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": { "temperature": 0 }
+      },
+      "id": "llm",
+      "name": "GPT-4o-mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [-3568, 1760],
+      "credentials": { "openAiApi": { "id": "wurRBEXXPomIM2MD", "name": "OpenAI account" } }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Normaliser').item.json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "memoire",
+      "name": "Mémoire Session",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [-3360, 1760]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Exécute une requête SQL (SELECT ou INSERT). Argument unique : query.",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('query') }}",
+        "options": {}
+      },
+      "id": "sql_tool",
+      "name": "Execute SQL",
+      "type": "n8n-nodes-base.mySqlTool",
+      "typeVersion": 2.5,
+      "position": [-3168, 1760],
+      "credentials": { "mySql": { "id": "MUkAJndyHJjTja6C", "name": "bot" } }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Initie un paiement Easypay. Arguments : cid, token, client_phone, montant, orderRef.",
+        "method": "POST",
+        "url": "=https://www.e-com-easypay.com/v1/mobile-money/payment?cid={{ $fromAI('cid') }}&token={{ $fromAI('token') }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "client_phone", "value": "={{ $fromAI('client_phone') }}" },
+            { "name": "montant", "value": "={{ $fromAI('montant') }}" },
+            { "name": "order_ref", "value": "={{ $fromAI('orderRef') }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "paiement_tool",
+      "name": "Initier Paiement Easypay",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [-2960, 1760]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.output ?? '';\nconst nav = $('Router Navigation').first().json;\nconst chatId = nav.chatId;\n\n// Si l'agent demande l'affichage des catégories ou boutiques\nif (output.includes('\"action\":\"show_categories\"')) {\n  return [{ json: { chatId, routeTo: 'categories', vendorId: nav.vendorId } }];\n}\nif (output.includes('\"action\":\"show_vendors\"')) {\n  return [{ json: { chatId, routeTo: 'vendors' } }];\n}\n\n// Réponse texte normale\nconst clean = output.replace(/\\{[\\s\\S]*?\\}/g, '').trim();\nreturn [{ json: { chatId, sendType: 'text', text: clean || '...', keyboard: [[{ text: '🏠 Accueil' }]] } }];"
+      },
+      "id": "parser_agent",
+      "name": "Parser Réponse Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2784, 1400]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.routeTo }}", "rightValue": "vendors", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.routeTo }}", "rightValue": "categories", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.sendType }}", "rightValue": "photo", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [{ "leftValue": "={{ $json.sendType }}", "rightValue": "text", "operator": { "type": "string", "operation": "equals" } }],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch_sortie_agent",
+      "name": "Switch Sortie Agent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [-2304, 1400]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": { "main": [[ { "node": "Normaliser", "type": "main", "index": 0 } ]] },
+    "Normaliser": { "main": [[ { "node": "Router Navigation", "type": "main", "index": 0 } ]] },
+    "Router Navigation": { "main": [[ { "node": "Switch Route", "type": "main", "index": 0 } ]] },
+    "Switch Route": {
+      "main": [
+        [ { "node": "SQL Vendeurs", "type": "main", "index": 0 } ],
+        [ { "node": "SQL Categories", "type": "main", "index": 0 } ],
+        [ { "node": "SQL Produits", "type": "main", "index": 0 } ],
+        [ { "node": "SQL Detail Produit", "type": "main", "index": 0 } ],
+        [ { "node": "Agent Marketplace IA", "type": "main", "index": 0 } ]
+      ]
+    },
+    "SQL Vendeurs": { "main": [[ { "node": "Handle Vendeurs", "type": "main", "index": 0 } ]] },
+    "SQL Categories": { "main": [[ { "node": "Handle Categories", "type": "main", "index": 0 } ]] },
+    "SQL Produits": { "main": [[ { "node": "Handle Produits", "type": "main", "index": 0 } ]] },
+    "SQL Detail Produit": { "main": [[ { "node": "Handle Detail Produit", "type": "main", "index": 0 } ]] },
+    "Handle Vendeurs": { "main": [[ { "node": "Photo ou Texte", "type": "main", "index": 0 } ]] },
+    "Handle Categories": { "main": [[ { "node": "Photo ou Texte", "type": "main", "index": 0 } ]] },
+    "Handle Produits": { "main": [[ { "node": "Photo ou Texte", "type": "main", "index": 0 } ]] },
+    "Handle Detail Produit": { "main": [[ { "node": "Photo ou Texte", "type": "main", "index": 0 } ]] },
+    "Photo ou Texte": {
+      "main": [
+        [ { "node": "Envoi Photo", "type": "main", "index": 0 } ],
+        [ { "node": "Envoi Texte", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Agent Marketplace IA": { "main": [[ { "node": "Parser Réponse Agent", "type": "main", "index": 0 } ]] },
+    "GPT-4o-mini": { "ai_languageModel": [[ { "node": "Agent Marketplace IA", "type": "ai_languageModel", "index": 0 } ]] },
+    "Mémoire Session": { "ai_memory": [[ { "node": "Agent Marketplace IA", "type": "ai_memory", "index": 0 } ]] },
+    "Execute SQL": { "ai_tool": [[ { "node": "Agent Marketplace IA", "type": "ai_tool", "index": 0 } ]] },
+    "Initier Paiement Easypay": { "ai_tool": [[ { "node": "Agent Marketplace IA", "type": "ai_tool", "index": 0 } ]] },
+    "Parser Réponse Agent": { "main": [[ { "node": "Switch Sortie Agent", "type": "main", "index": 0 } ]] },
+    "Switch Sortie Agent": {
+      "main": [
+        [ { "node": "SQL Vendeurs", "type": "main", "index": 0 } ],
+        [ { "node": "SQL Categories", "type": "main", "index": 0 } ],
+        [ { "node": "Envoi Photo", "type": "main", "index": 0 } ],
+        [ { "node": "Envoi Texte", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "28ba8da7efe41ef60114b1f60ca46803f555a43a3988061843f330213252ba86"
+  }
+}
