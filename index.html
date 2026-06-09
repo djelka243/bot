@@ -6,7 +6,7 @@
 <title>Bot Vendeur</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-/* (le style reste strictement identique à l'original) */
+/* Style strictement identique à ton design d'origine */
 :root {
   --bg: var(--tg-theme-bg-color, #0f0f13);
   --bg2: var(--tg-theme-secondary-bg-color, #1a1a24);
@@ -426,7 +426,7 @@ const N8N_WEBHOOK = 'https://auto.jessydjonga.site/webhook/tma-vendeur';
 const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
-const chatId = tg?.initDataUnsafe?.user?.id?.toString() || 'test_' + Date.now();
+const chatId = tg?.initDataUnsafe?.user?.id?.toString() || 'test_123456';
 
 let profile = null;
 let categories = [];
@@ -454,15 +454,10 @@ async function api(action, payload={}) {
       body: JSON.stringify({ chatId, action, ...payload })
     });
     const data = await res.json();
-    console.log(`[API ${action}] réponse reçue :`, data);
-    // Normalisation : si data est un tableau, le retourner directement
-    if (Array.isArray(data)) return data;
-    // Si data est un objet avec une propriété 'data' qui est un tableau
-    if (data && Array.isArray(data.data)) return data.data;
-    // Sinon retourner l'objet tel quel (pour get_profile, login, etc.)
+    console.log(`[API ${action}] Réponse brute :`, data);
     return data;
   } catch(e) {
-    console.error(`[API ${action}] erreur réseau :`, e);
+    console.error(`[API ${action}] Erreur réseau :`, e);
     return { error: 'Erreur réseau' };
   }
 }
@@ -483,7 +478,7 @@ async function seConnecter() {
   loader(true);
   const r = await api('login', { password: pwd });
   loader(false);
-  if (r.success) {
+  if (r && r.success) {
     toast('✅ Connecté !');
     await initMainScreen();
   } else {
@@ -506,15 +501,20 @@ async function sInscrire() {
     password:     pwd
   });
   loader(false);
-  if (r.success) {
-    toast('🎉 Boutique créée ! En attente de validation.');
+  if (r && r.success) {
+    toast('🎉 Boutique créée !');
     await initMainScreen();
-  } else toast(r.error || '⚠️ Erreur lors de l\'inscription');
+  } else toast(r?.error || '⚠️ Erreur lors de l\'inscription');
 }
 
 async function initMainScreen() {
   showScreen('screen-main');
-  await Promise.all([chargerProfil(), chargerCategories(), chargerProduits()]);
+  loader(true);
+  // On chaîne proprement le chargement pour éviter les conflits d'interface
+  await chargerProfil();
+  await chargerCategories();
+  await chargerProduits();
+  loader(false);
 }
 
 async function seDeconnecter() {
@@ -536,9 +536,12 @@ function showPage(name, btn) {
 
 async function chargerProfil() {
   const d = await api('get_profile');
-  if (!d || d.error || !d.nom_boutique) return;
-  profile = d;
-  document.getElementById('topbar-shop').textContent = d.nom_boutique;
+  // Lecture du profil encapsulé si existant
+  const prof = d?.profile || d;
+  if (!prof || prof.error || !prof.nom_boutique) return;
+  profile = prof;
+  
+  document.getElementById('topbar-shop').textContent = prof.nom_boutique;
   const statusMap = {
     'en_attente': { cls:'pending', txt:'⏳ En attente' },
     'approuvé':   { cls:'approved', txt:'✅ Approuvé' },
@@ -546,13 +549,14 @@ async function chargerProfil() {
     'rejeté':     { cls:'rejected', txt:'❌ Rejeté' },
     'rejete':     { cls:'rejected', txt:'❌ Rejeté' },
   };
-  const st = statusMap[(d.statut||'').toLowerCase()] || { cls:'pending', txt:'❓ Inconnu' };
+  const st = statusMap[(prof.statut||'').toLowerCase()] || { cls:'pending', txt:'⏳ En attente' };
   document.getElementById('topbar-status').innerHTML = `<span class="badge ${st.cls}" style="padding:2px 8px;font-size:11px">${st.txt}</span>`;
+  
   document.getElementById('profil-content').innerHTML = `
     <div class="profile-hero">
       <div class="profile-avatar">🏪</div>
-      <div class="profile-name">${escHtml(d.nom_boutique)}</div>
-      <div class="profile-desc">${escHtml(d.description||'Aucune description')}</div>
+      <div class="profile-name">${escHtml(prof.nom_boutique)}</div>
+      <div class="profile-desc">${escHtml(prof.description||'Aucune description')}</div>
       <span class="badge ${st.cls}">${st.txt}</span>
     </div>
     <div class="stats-row">
@@ -560,15 +564,15 @@ async function chargerProfil() {
       <div class="stat-card"><div class="stat-num" id="stat-prods">${produits.length}</div><div class="stat-lbl">Produits</div></div>
     </div>
     <div class="info-grid">
-      <div class="info-cell"><div class="lbl">📞 Téléphone</div><div class="val">${escHtml(d.telephone||'-')}</div></div>
-      <div class="info-cell"><div class="lbl">📍 Adresse</div><div class="val">${escHtml(d.adresse||'-')}</div></div>
+      <div class="info-cell"><div class="lbl">📞 Téléphone</div><div class="val">${escHtml(prof.telephone||'-')}</div></div>
+      <div class="info-cell"><div class="lbl">📍 Adresse</div><div class="val">${escHtml(prof.adresse||'-')}</div></div>
     </div>
     <div class="card" style="margin-bottom:0"><div style="font-size:13px;color:var(--sub);text-align:center">Vendeur enregistré · ID ${escHtml(chatId)}</div></div>`;
 }
 
 async function chargerCategories() {
-  const data = await api('list_categories');
-  categories = Array.isArray(data) ? data : [];
+  const r = await api('list_categories');
+  categories = r?.categories || (Array.isArray(r) ? r : []);
   renderCategories();
   updateCatSelect();
   document.getElementById('cat-count').textContent = categories.length + (categories.length > 1 ? ' catégories' : ' catégorie');
@@ -587,18 +591,18 @@ function renderCategories() {
       <div class="item-icon">🗂️</div>
       <div class="item-info">
         <div class="item-name">${escHtml(c.nom)}</div>
-        <div class="item-meta">${produits.filter(p=>p.categorie_nom===c.nom).length} produit(s)</div>
+        <div class="item-meta">${produits.filter(p => p.categorie_nom === c.nom).length} produit(s)</div>
       </div>
       <div class="item-actions">
-        <button class="icon-btn edit" onclick="editCategorie('${escHtml(c.nom)}')" title="Modifier">✏️</button>
-        <button class="icon-btn del" onclick="deleteCategorie('${escHtml(c.nom)}')" title="Supprimer">🗑️</button>
+        <button class="icon-btn edit" onclick="editCategorie(${c.id}, '${escHtml(c.nom)}')" title="Modifier">✏️</button>
+        <button class="icon-btn del" onclick="deleteCategorie(${c.id}, '${escHtml(c.nom)}')" title="Supprimer">🗑️</button>
       </div>
     </div>`).join('');
 }
 
 function updateCatSelect() {
   const sel = document.getElementById('ap-cat');
-  sel.innerHTML = '<option value="">— Choisir une catégorie —</option>' + categories.map(c => `<option value="${escHtml(c.nom)}">${escHtml(c.nom)}</option>`).join('');
+  sel.innerHTML = '<option value="">— Choisir une catégorie —</option>' + categories.map(c => `<option value="${c.id}">${escHtml(c.nom)}</option>`).join('');
 }
 
 async function ajouterCategorie() {
@@ -607,48 +611,46 @@ async function ajouterCategorie() {
   loader(true);
   const r = await api('add_category', { nom });
   loader(false);
-  if (r.success) {
+  if (r && r.success) {
     toast('✅ Catégorie ajoutée !');
     document.getElementById('cat-nom').value = '';
     await chargerCategories();
-  } else toast(r.error || '⚠️ Erreur');
+  } else toast(r?.error || '⚠️ Erreur');
 }
 
-function editCategorie(nom) {
-  document.getElementById('modal-title').innerHTML = '✏️ Renommer';
-  document.getElementById('modal-body').innerHTML = `<div class="field"><label>Nouveau nom</label><input type="text" id="m-cat-nom" value="${escHtml(nom)}"></div>`;
+function editCategorie(id, nomActuel) {
+  document.getElementById('modal-title').innerHTML = '✏️ Renommer la catégorie';
+  document.getElementById('modal-body').innerHTML = `<div class="field"><label>Nouveau nom</label><input type="text" id="m-cat-nom" value="${escHtml(nomActuel)}"></div>`;
   document.getElementById('modal-ok').onclick = async () => {
-    const newNom = document.getElementById('m-cat-nom').value.trim();
-    if (!newNom || newNom.length < 2) { toast('⚠️ Nom trop court'); return; }
+    const nom = document.getElementById('m-cat-nom').value.trim();
+    if (!nom || nom.length < 2) { toast('⚠️ Nom trop court'); return; }
     loader(true); closeModal();
-    const r = await api('update_category', { oldNom: nom, newNom });
+    const r = await api('update_category', { id, nom });
     loader(false);
-    if (r.success) { toast('✅ Catégorie renommée !'); chargerCategories(); }
-    else toast(r.error || '⚠️ Erreur');
+    if (r && r.success) { toast('✅ Catégorie renommée !'); chargerCategories(); }
+    else toast(r?.error || '⚠️ Erreur');
   };
   document.getElementById('modal').classList.add('open');
 }
 
-async function deleteCategorie(nom) {
+async function deleteCategorie(id, nom) {
   document.getElementById('modal-title').innerHTML = '🗑️ Supprimer';
   document.getElementById('modal-body').innerHTML = `<p style="color:var(--sub);font-size:14px">Supprimer la catégorie <strong style="color:var(--text)">${escHtml(nom)}</strong> ?<br>Cette action est irréversible.</p>`;
   document.getElementById('modal-ok').className = 'btn-danger';
   document.getElementById('modal-ok').textContent = '🗑️ Oui, supprimer';
   document.getElementById('modal-ok').onclick = async () => {
     loader(true); closeModal();
-    const r = await api('delete_category', { nom });
+    const r = await api('delete_category', { id });
     loader(false);
-    document.getElementById('modal-ok').className = 'btn-primary';
-    document.getElementById('modal-ok').textContent = 'Confirmer';
-    if (r.success) { toast('🗑️ Supprimée !'); chargerCategories(); }
-    else toast(r.error || '⚠️ Erreur');
+    if (r && r.success) { toast('🗑️ Supprimée !'); chargerCategories(); }
+    else toast(r?.error || '⚠️ Erreur');
   };
   document.getElementById('modal').classList.add('open');
 }
 
 async function chargerProduits() {
-  const data = await api('list_products');
-  produits = Array.isArray(data) ? data : [];
+  const r = await api('list_products');
+  produits = r?.products || (Array.isArray(r) ? r : []);
   renderProduits();
   document.getElementById('prod-count').textContent = produits.length + (produits.length > 1 ? ' produits' : ' produit');
   const el = document.getElementById('stat-prods');
@@ -666,11 +668,15 @@ function renderProduits() {
       <div class="item-icon">📦</div>
       <div class="item-info">
         <div class="item-name">${escHtml(p.nom)}</div>
-        <div class="item-meta"><strong style="color:var(--accent2)">${p.prix} $</strong> ${p.taille ? ' · ' + escHtml(p.taille) : ''} ${p.description ? ' · <em>' + escHtml(p.description.substring(0,40)) + (p.description.length>40?'...':'') + '</em>' : ''}</div>
+        <div class="item-meta">
+          <strong style="color:var(--accent2)">${p.prix} $</strong> 
+          ${p.taille ? ' · ' + escHtml(p.taille) : ''} 
+          ${p.categorie_nom ? ' · <span style="opacity:0.7;color:var(--accent2)">' + escHtml(p.categorie_nom) + '</span>' : ''}
+        </div>
       </div>
       <div class="item-actions">
-        <button class="icon-btn edit" onclick="editProduit('${escHtml(p.nom)}')" title="Modifier">✏️</button>
-        <button class="icon-btn del" onclick="deleteProduit('${escHtml(p.nom)}')" title="Supprimer">🗑️</button>
+        <button class="icon-btn edit" onclick="editProduit(${p.id})" title="Modifier/Détails">✏️</button>
+        <button class="icon-btn del" onclick="deleteProduit(${p.id}, '${escHtml(p.nom)}')" title="Supprimer">🗑️</button>
       </div>
     </div>`).join('');
 }
@@ -684,64 +690,83 @@ function openAddProduct() {
 
 async function ajouterProduit() {
   const nom = document.getElementById('ap-nom').value.trim();
-  const cat = document.getElementById('ap-cat').value;
+  const categorie_id = document.getElementById('ap-cat').value;
   const prix = parseFloat(document.getElementById('ap-prix').value);
   if (!nom || nom.length < 2) { toast('⚠️ Nom requis'); return; }
-  if (!cat) { toast('⚠️ Choisissez une catégorie'); return; }
   if (isNaN(prix) || prix <= 0) { toast('⚠️ Prix invalide'); return; }
+  
   loader(true);
   document.getElementById('modal-add-product').classList.remove('open');
   const r = await api('add_product', {
-    nom, cat, prix,
+    nom, 
+    categorie_id: categorie_id ? parseInt(categorie_id) : null, 
+    prix,
     desc: document.getElementById('ap-desc').value.trim() || null,
     taille: document.getElementById('ap-taille').value.trim() || null
   });
   loader(false);
-  if (r.success) { toast('✅ Produit ajouté !'); await chargerProduits(); }
-  else toast(r.error || '⚠️ Erreur');
+  if (r && r.success) { toast('✅ Produit ajouté !'); await chargerProduits(); }
+  else toast(r?.error || '⚠️ Erreur');
 }
 
-function editProduit(nom) {
-  const p = produits.find(x => x.nom === nom);
-  if (!p) return;
+async function editProduit(id) {
+  loader(true);
+  const res = await api('get_product', { id });
+  loader(false);
+  
+  const p = res?.product || res;
+  if (!p || p.error || !p.id) { toast('⚠️ Impossible de charger le détail du produit'); return; }
+  
   document.getElementById('modal-title').innerHTML = '✏️ Modifier le produit';
+  
+  // Génération dynamique du select de catégorie mis à jour
+  const catOptions = categories.map(c => `
+    <option value="${c.id}" ${parseInt(p.categorie_id) === parseInt(c.id) ? 'selected' : ''}>${escHtml(c.nom)}</option>
+  `).join('');
+
   document.getElementById('modal-body').innerHTML = `
-    <div class="field"><label>Nom</label><input type="text" id="m-p-nom" value="${escHtml(p.nom)}"></div>
+    <div class="field"><label>Nom *</label><input type="text" id="m-p-nom" value="${escHtml(p.nom)}"></div>
+    <div class="field"><label>Catégorie</label>
+      <select id="m-p-cat"><option value="">— Sans catégorie —</option>${catOptions}</select>
+    </div>
     <div class="field"><label>Description</label><textarea id="m-p-desc">${escHtml(p.description||'')}</textarea></div>
-    <div class="field"><label>Prix ($)</label><input type="number" id="m-p-prix" value="${p.prix}" min="0" step="0.01"></div>
-    <div class="field"><label>Taille</label><input type="text" id="m-p-taille" value="${escHtml(p.taille||'')}"></div>`;
-  document.getElementById('modal-ok').className = 'btn-primary';
-  document.getElementById('modal-ok').textContent = 'Confirmer';
+    <div class="field"><label>Prix ($) *</label><input type="number" id="m-p-prix" value="${p.prix}" min="0" step="0.01"></div>
+    <div class="field"><label>Taille / Variante</label><input type="text" id="m-p-taille" value="${escHtml(p.taille||'')}"></div>`;
+    
   document.getElementById('modal-ok').onclick = async () => {
-    const newNom = document.getElementById('m-p-nom').value.trim();
-    const newPrix = parseFloat(document.getElementById('m-p-prix').value);
-    if (!newNom || isNaN(newPrix) || newPrix <= 0) { toast('⚠️ Données invalides'); return; }
+    const nom = document.getElementById('m-p-nom').value.trim();
+    const catId = document.getElementById('m-p-cat').value;
+    const prix = parseFloat(document.getElementById('m-p-prix').value);
+    
+    if (!nom || isNaN(prix) || prix <= 0) { toast('⚠️ Données invalides'); return; }
+    
     loader(true); closeModal();
     const r = await api('update_product', {
-      oldNom: nom, nom: newNom, prix: newPrix,
+      id,
+      nom,
+      categorie_id: catId ? parseInt(catId) : null,
+      prix,
       desc: document.getElementById('m-p-desc').value.trim() || null,
       taille: document.getElementById('m-p-taille').value.trim() || null
     });
     loader(false);
-    if (r.success) { toast('✅ Produit mis à jour !'); chargerProduits(); }
-    else toast(r.error || '⚠️ Erreur');
+    if (r && r.success) { toast('✅ Produit mis à jour !'); chargerProduits(); }
+    else toast(r?.error || '⚠️ Erreur');
   };
   document.getElementById('modal').classList.add('open');
 }
 
-async function deleteProduit(nom) {
+async function deleteProduit(id, nom) {
   document.getElementById('modal-title').innerHTML = '🗑️ Supprimer';
   document.getElementById('modal-body').innerHTML = `<p style="color:var(--sub);font-size:14px">Supprimer le produit <strong style="color:var(--text)">${escHtml(nom)}</strong> ?<br>Cette action est irréversible.</p>`;
   document.getElementById('modal-ok').className = 'btn-danger';
   document.getElementById('modal-ok').textContent = '🗑️ Oui, supprimer';
   document.getElementById('modal-ok').onclick = async () => {
     loader(true); closeModal();
-    const r = await api('delete_product', { nom });
+    const r = await api('delete_product', { id });
     loader(false);
-    document.getElementById('modal-ok').className = 'btn-primary';
-    document.getElementById('modal-ok').textContent = 'Confirmer';
-    if (r.success) { toast('🗑️ Supprimé !'); chargerProduits(); }
-    else toast(r.error || '⚠️ Erreur');
+    if (r && r.success) { toast('🗑️ Supprimé !'); chargerProduits(); }
+    else toast(r?.error || '⚠️ Erreur');
   };
   document.getElementById('modal').classList.add('open');
 }
@@ -751,14 +776,21 @@ function closeModal() {
   document.getElementById('modal-ok').className = 'btn-primary';
   document.getElementById('modal-ok').textContent = 'Confirmer';
 }
+
 document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
 document.getElementById('modal-add-product').addEventListener('click', e => { if (e.target === document.getElementById('modal-add-product')) document.getElementById('modal-add-product').classList.remove('open'); });
 
+// Initialisation au lancement
 (async () => {
   loader(true);
   const d = await api('get_profile');
   loader(false);
-  if (d && !d.error && d.nom_boutique) await initMainScreen();
+  const prof = d?.profile || d;
+  if (prof && !prof.error && prof.nom_boutique) {
+    await initMainScreen();
+  } else {
+    showScreen('screen-login');
+  }
 })();
 </script>
 </body>
