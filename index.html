@@ -3,610 +3,921 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Bot Vendeur — Panneau</title>
+<title>Bot Vendeur</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--tg-theme-bg-color, #fff);
-    color: var(--tg-theme-text-color, #000);
-    font-size: 15px;
-    padding-bottom: 80px;
-  }
-  .header {
-    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-    padding: 14px 16px 10px;
-    display: flex; align-items: center; gap: 10px;
-    border-bottom: 1px solid rgba(0,0,0,.08);
-    position: sticky; top: 0; z-index: 10;
-  }
-  .header h1 { font-size: 17px; font-weight: 600; }
-  .header .sub { font-size: 12px; color: var(--tg-theme-hint-color, #888); }
-  .nav-tabs {
-    display: flex; background: var(--tg-theme-secondary-bg-color, #f4f4f4);
-    border-bottom: 1px solid rgba(0,0,0,.08);
-    overflow-x: auto; scrollbar-width: none;
-  }
-  .nav-tabs::-webkit-scrollbar { display: none; }
-  .tab-btn {
-    flex: 1; min-width: 80px; padding: 12px 8px;
-    background: none; border: none; font-size: 12px;
-    color: var(--tg-theme-hint-color, #888);
-    cursor: pointer; white-space: nowrap;
-    border-bottom: 2px solid transparent;
-    transition: all .2s;
-  }
-  .tab-btn.active {
-    color: var(--tg-theme-link-color, #2AABEE);
-    border-bottom-color: var(--tg-theme-link-color, #2AABEE);
-    font-weight: 600;
-  }
-  .tab-btn .icon { display: block; font-size: 20px; margin-bottom: 2px; }
-  .page { display: none; padding: 16px; }
-  .page.active { display: block; }
-  .card {
-    background: var(--tg-theme-secondary-bg-color, #f9f9f9);
-    border-radius: 12px; padding: 14px 16px; margin-bottom: 12px;
-  }
-  .card-title {
-    font-size: 13px; font-weight: 600; margin-bottom: 10px;
-    color: var(--tg-theme-hint-color, #888);
-    text-transform: uppercase; letter-spacing: .5px;
-  }
-  .form-group { margin-bottom: 12px; }
-  .form-group label {
-    display: block; font-size: 13px; margin-bottom: 5px;
-    color: var(--tg-theme-hint-color, #888);
-  }
-  .form-group input,
-  .form-group textarea,
-  .form-group select {
-    width: 100%; padding: 11px 13px;
-    background: var(--tg-theme-bg-color, #fff);
-    color: var(--tg-theme-text-color, #000);
-    border: 1.5px solid rgba(0,0,0,.1);
-    border-radius: 10px; font-size: 15px;
-    outline: none; transition: border-color .2s;
-  }
-  .form-group input:focus,
-  .form-group textarea:focus,
-  .form-group select:focus {
-    border-color: var(--tg-theme-link-color, #2AABEE);
-  }
-  .form-group textarea { min-height: 80px; resize: vertical; }
-  .form-group .hint {
-    font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-top: 4px;
-  }
-  .btn {
-    width: 100%; padding: 13px;
-    background: var(--tg-theme-button-color, #2AABEE);
-    color: var(--tg-theme-button-text-color, #fff);
-    border: none; border-radius: 10px;
-    font-size: 16px; font-weight: 600; cursor: pointer;
-    transition: opacity .2s;
-  }
-  .btn:active { opacity: .75; }
-  .btn.secondary {
-    background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-    color: var(--tg-theme-text-color, #000);
-    margin-top: 8px;
-  }
-  .btn.danger {
-    background: #ff3b30;
-    color: #fff;
-  }
-  .list-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.06);
-  }
-  .list-item:last-child { border-bottom: none; }
-  .list-item .info { flex: 1; min-width: 0; }
-  .list-item .name { font-size: 15px; font-weight: 500; }
-  .list-item .meta { font-size: 13px; color: var(--tg-theme-hint-color, #888); }
-  .list-item .actions { display: flex; gap: 6px; }
-  .icon-btn {
-    background: none; border: none; cursor: pointer;
-    padding: 6px; border-radius: 8px; font-size: 18px;
-    color: var(--tg-theme-link-color, #2AABEE);
-    transition: background .2s;
-  }
-  .icon-btn:active { background: rgba(0,0,0,.06); }
-  .icon-btn.danger { color: #ff3b30; }
-  .badge {
-    display: inline-block; padding: 3px 8px;
-    border-radius: 20px; font-size: 12px; font-weight: 600;
-  }
-  .badge.pending { background: #fff3cd; color: #856404; }
-  .badge.approved { background: #d4edda; color: #155724; }
-  .badge.rejected { background: #f8d7da; color: #721c24; }
-  .toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,.8); color: #fff;
-    padding: 10px 20px; border-radius: 20px;
-    font-size: 14px; z-index: 999; pointer-events: none;
-    opacity: 0; transition: opacity .3s;
-  }
-  .toast.show { opacity: 1; }
-  .empty-state {
-    text-align: center; padding: 32px 16px;
-    color: var(--tg-theme-hint-color, #888);
-  }
-  .empty-state .icon { font-size: 48px; margin-bottom: 8px; }
-  .profile-row {
-    display: flex; justify-content: space-between;
-    padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,.06);
-  }
-  .profile-row:last-child { border-bottom: none; }
-  .profile-row .lbl { font-size: 14px; color: var(--tg-theme-hint-color, #888); }
-  .profile-row .val { font-size: 14px; font-weight: 500; text-align: right; max-width: 60%; }
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.5); z-index: 100;
-    align-items: flex-end;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--tg-theme-bg-color, #fff);
-    width: 100%; border-radius: 16px 16px 0 0;
-    padding: 16px; max-height: 85vh; overflow-y: auto;
-  }
-  .modal-handle {
-    width: 36px; height: 4px; background: rgba(0,0,0,.2);
-    border-radius: 2px; margin: 0 auto 16px;
-  }
-  .modal-title { font-size: 17px; font-weight: 600; margin-bottom: 16px; }
+:root {
+  --bg: var(--tg-theme-bg-color, #0f0f13);
+  --bg2: var(--tg-theme-secondary-bg-color, #1a1a24);
+  --accent: #6C63FF;
+  --accent2: #a78bfa;
+  --text: var(--tg-theme-text-color, #f0f0f5);
+  --sub: var(--tg-theme-hint-color, #8888a8);
+  --border: rgba(108,99,255,0.18);
+  --card: rgba(255,255,255,0.04);
+  --input-bg: rgba(255,255,255,0.06);
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg);color:var(--text);
+  font-size:15px;line-height:1.5;
+}
+
+/* ── SCREENS ── */
+.screen{
+  position:fixed;inset:0;
+  display:flex;flex-direction:column;
+  transition:opacity .3s,transform .3s;
+  overflow:hidden;
+}
+.screen.hidden{opacity:0;pointer-events:none;transform:translateY(20px)}
+
+/* ── SCROLL AREA ── */
+.scroll{flex:1;overflow-y:auto;padding:0 16px 24px;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ── LOGIN SCREEN ── */
+#screen-login{
+  background:linear-gradient(160deg,#0f0f13 0%,#1a1226 50%,#0f0f13 100%);
+  justify-content:center;align-items:center;padding:32px 24px;
+}
+.login-logo{
+  width:72px;height:72px;border-radius:22px;
+  background:linear-gradient(135deg,var(--accent),#a78bfa);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;margin:0 auto 20px;
+  box-shadow:0 8px 32px rgba(108,99,255,.4);
+}
+.login-title{font-size:26px;font-weight:700;text-align:center;margin-bottom:6px}
+.login-sub{font-size:14px;color:var(--sub);text-align:center;margin-bottom:36px}
+
+.tab-switcher{
+  display:flex;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:3px;margin-bottom:24px;
+}
+.tab-sw-btn{
+  flex:1;padding:9px;border:none;border-radius:8px;
+  background:none;color:var(--sub);font-size:14px;font-weight:500;cursor:pointer;
+  transition:all .2s;
+}
+.tab-sw-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 12px rgba(108,99,255,.4)}
+
+.form-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;
+}
+.form-section{display:none}
+.form-section.active{display:block}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.field input,.field textarea,.field select{
+  width:100%;padding:13px 14px;
+  background:var(--input-bg);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--text);font-size:15px;
+  outline:none;transition:border-color .2s,background .2s;
+  -webkit-appearance:none;
+}
+.field input:focus,.field textarea:focus,.field select:focus{
+  border-color:var(--accent);background:rgba(108,99,255,.08);
+}
+.field input::placeholder,.field textarea::placeholder{color:var(--sub);opacity:.6}
+.field select option{background:#1a1a24;color:var(--text)}
+.field textarea{min-height:72px;resize:none}
+.field .hint{font-size:12px;color:var(--sub);margin-top:5px}
+
+.btn-primary{
+  width:100%;padding:15px;border:none;border-radius:var(--radius-sm);
+  background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  color:#fff;font-size:16px;font-weight:600;cursor:pointer;
+  box-shadow:0 4px 20px rgba(108,99,255,.35);
+  transition:opacity .15s,transform .1s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-primary:active{opacity:.85;transform:scale(.98)}
+.btn-primary:disabled{opacity:.5;pointer-events:none}
+
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ── MAIN SCREEN ── */
+#screen-main{background:var(--bg)}
+
+/* ── TOP BAR ── */
+.topbar{
+  padding:14px 16px 10px;
+  display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);flex-shrink:0;
+}
+.topbar-avatar{
+  width:38px;height:38px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),#a78bfa);
+  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;
+}
+.topbar-info{flex:1;min-width:0}
+.topbar-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-status{font-size:12px;color:var(--sub)}
+.topbar-logout{
+  background:rgba(239,68,68,.12);border:none;color:var(--danger);
+  padding:7px 12px;border-radius:8px;font-size:13px;cursor:pointer;
+  font-weight:500;transition:background .2s;
+}
+.topbar-logout:active{background:rgba(239,68,68,.2)}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{
+  display:flex;border-top:1px solid var(--border);
+  background:var(--bg);flex-shrink:0;
+  padding-bottom:env(safe-area-inset-bottom, 0);
+}
+.nav-btn{
+  flex:1;padding:10px 4px 8px;background:none;border:none;
+  color:var(--sub);cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:3px;font-size:10px;font-weight:500;
+  transition:color .2s;
+}
+.nav-btn .nav-icon{font-size:22px;transition:transform .2s}
+.nav-btn.active{color:var(--accent)}
+.nav-btn.active .nav-icon{transform:scale(1.15)}
+
+/* ── PAGES ── */
+.page{display:none;flex-direction:column;flex:1;overflow:hidden}
+.page.active{display:flex}
+
+/* ── PAGE HEADER ── */
+.page-header{
+  padding:16px 16px 12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.page-title{font-size:22px;font-weight:700}
+.page-sub{font-size:13px;color:var(--sub);margin-top:2px}
+
+/* ── CARDS ── */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;margin-bottom:12px;
+}
+.card-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;
+}
+.card-icon{
+  width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+.card-icon.purple{background:rgba(108,99,255,.2)}
+.card-icon.green{background:rgba(34,197,94,.2)}
+.card-icon.amber{background:rgba(245,158,11,.2)}
+.card-icon.red{background:rgba(239,68,68,.15)}
+.card-title{font-size:15px;font-weight:600}
+.card-sub{font-size:12px;color:var(--sub)}
+
+/* ── LIST ITEMS ── */
+.list-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;border-bottom:1px solid var(--border);
+}
+.list-item:last-child{border-bottom:none}
+.item-icon{
+  width:38px;height:38px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+  background:rgba(108,99,255,.12);flex-shrink:0;
+}
+.item-info{flex:1;min-width:0}
+.item-name{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-meta{font-size:12px;color:var(--sub);margin-top:2px}
+.item-actions{display:flex;gap:6px;flex-shrink:0}
+.icon-btn{
+  width:32px;height:32px;border-radius:8px;border:none;
+  background:rgba(255,255,255,.06);color:var(--sub);
+  font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .2s,color .2s;
+}
+.icon-btn:active{transform:scale(.9)}
+.icon-btn.edit:active,.icon-btn.edit:hover{background:rgba(108,99,255,.2);color:var(--accent2)}
+.icon-btn.del:active,.icon-btn.del:hover{background:rgba(239,68,68,.15);color:var(--danger)}
+
+/* ── PROFIL ── */
+.profile-hero{
+  background:linear-gradient(135deg,rgba(108,99,255,.15),rgba(167,139,250,.08));
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;margin-bottom:12px;text-align:center;
+}
+.profile-avatar{
+  width:64px;height:64px;border-radius:20px;
+  background:linear-gradient(135deg,var(--accent),#a78bfa);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;margin:0 auto 12px;
+  box-shadow:0 4px 20px rgba(108,99,255,.35);
+}
+.profile-name{font-size:20px;font-weight:700;margin-bottom:4px}
+.profile-desc{font-size:13px;color:var(--sub);margin-bottom:12px}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;
+}
+.badge.pending{background:rgba(245,158,11,.15);color:var(--warning)}
+.badge.approved{background:rgba(34,197,94,.15);color:var(--success)}
+.badge.rejected{background:rgba(239,68,68,.15);color:var(--danger)}
+
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.info-cell{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:12px;
+}
+.info-cell .lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.info-cell .val{font-size:14px;font-weight:500;word-break:break-word}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:14px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.stat-num{font-size:24px;font-weight:700;color:var(--accent2)}
+.stat-lbl{font-size:12px;color:var(--sub)}
+
+/* ── EMPTY STATE ── */
+.empty{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:40px 20px;text-align:center;
+  color:var(--sub);
+}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.6}
+.empty-text{font-size:14px}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:200;display:flex;align-items:flex-end;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:#1a1a24;border:1px solid var(--border);
+  border-radius:var(--radius) var(--radius) 0 0;
+  width:100%;padding:16px;max-height:85vh;overflow-y:auto;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-handle{width:36px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.btn-danger{
+  width:100%;padding:14px;border:1px solid rgba(239,68,68,.3);
+  border-radius:var(--radius-sm);background:rgba(239,68,68,.1);
+  color:var(--danger);font-size:15px;font-weight:600;cursor:pointer;
+  margin-top:8px;transition:background .2s;
+}
+.btn-danger:active{background:rgba(239,68,68,.2)}
+.btn-cancel{
+  width:100%;padding:14px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--card);
+  color:var(--sub);font-size:15px;cursor:pointer;margin-top:8px;
+}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:#1e1e2e;border:1px solid var(--border);
+  color:var(--text);padding:10px 20px;border-radius:30px;
+  font-size:14px;z-index:999;pointer-events:none;
+  opacity:0;transition:opacity .25s,transform .25s;
+  white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── LOADER ── */
+.loader-overlay{
+  position:fixed;inset:0;background:rgba(15,15,19,.9);
+  display:flex;align-items:center;justify-content:center;
+  z-index:300;opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.loader-overlay.show{opacity:1;pointer-events:all}
+.spinner{
+  width:40px;height:40px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── ADD BUTTON FLOAT ── */
+.fab{
+  position:sticky;bottom:16px;right:0;
+  display:flex;justify-content:flex-end;
+  margin-top:4px;
+}
+.fab-btn{
+  background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  color:#fff;border:none;border-radius:14px;
+  padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:6px;
+  box-shadow:0 4px 20px rgba(108,99,255,.5);
+  transition:transform .15s,opacity .15s;
+}
+.fab-btn:active{transform:scale(.95);opacity:.9}
+
+/* ── SECTION LABEL ── */
+.section-label{
+  font-size:11px;font-weight:600;color:var(--sub);
+  text-transform:uppercase;letter-spacing:.8px;
+  margin:16px 0 8px;
+}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <div class="header" style="padding:0;border:none;background:none">
-      <div>
-        <h1>🏪 Bot Vendeur</h1>
-        <div class="sub" id="user-name">Chargement...</div>
+<!-- ══════════════════════════════ LOGIN SCREEN ══════════════════════════════ -->
+<div class="screen" id="screen-login">
+  <div style="width:100%;max-width:400px">
+    <div class="login-logo">🏪</div>
+    <div class="login-title">Bot Vendeur</div>
+    <div class="login-sub">Gérez votre boutique en toute simplicité</div>
+
+    <div class="tab-switcher">
+      <button class="tab-sw-btn active" onclick="switchAuthTab('login')">Se connecter</button>
+      <button class="tab-sw-btn" onclick="switchAuthTab('register')">S'inscrire</button>
+    </div>
+
+    <div class="form-card">
+      <!-- LOGIN -->
+      <div class="form-section active" id="fs-login">
+        <div class="field">
+          <label>Mot de passe</label>
+          <input type="password" id="login-password" placeholder="Votre mot de passe" autocomplete="current-password">
+        </div>
+        <button class="btn-primary" onclick="seConnecter()">
+          <span>🔑</span> Se connecter
+        </button>
+        <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--sub)">
+          Pas de compte ? 
+          <span style="color:var(--accent2);cursor:pointer" onclick="switchAuthTab('register')">S'inscrire →</span>
+        </div>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="form-section" id="fs-register">
+        <div class="field">
+          <label>Nom de la boutique *</label>
+          <input type="text" id="reg-nom" placeholder="Ex: MH Beauty Shop" maxlength="100">
+        </div>
+        <div class="field">
+          <label>Description</label>
+          <textarea id="reg-desc" placeholder="Décrivez votre boutique..."></textarea>
+        </div>
+        <div class="field">
+          <label>Téléphone</label>
+          <input type="tel" id="reg-tel" placeholder="+243 xxx xxx xxx">
+        </div>
+        <div class="field">
+          <label>Adresse</label>
+          <input type="text" id="reg-adr" placeholder="Votre adresse">
+        </div>
+        <div class="field">
+          <label>Mot de passe *</label>
+          <input type="password" id="reg-password" placeholder="Minimum 4 caractères">
+          <div class="hint">🔒 Choisissez un mot de passe sécurisé</div>
+        </div>
+        <button class="btn-primary" onclick="sInscrire()">
+          <span>🚀</span> Créer ma boutique
+        </button>
+        <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--sub)">
+          Déjà inscrit ? 
+          <span style="color:var(--accent2);cursor:pointer" onclick="switchAuthTab('login')">Se connecter →</span>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="nav-tabs">
-  <button class="tab-btn active" onclick="showTab('profil')">
-    <span class="icon">👤</span>Profil
-  </button>
-  <button class="tab-btn" onclick="showTab('categories')">
-    <span class="icon">🗂️</span>Catégories
-  </button>
-  <button class="tab-btn" onclick="showTab('produits')">
-    <span class="icon">📦</span>Produits
-  </button>
-  <button class="tab-btn" onclick="showTab('connexion')">
-    <span class="icon">🔑</span>Connexion
-  </button>
-</div>
-
-<!-- PAGE PROFIL -->
-<div id="page-profil" class="page active">
-  <div id="profil-content">
-    <div class="empty-state">
-      <div class="icon">⏳</div>
-      <div>Chargement du profil...</div>
+<!-- ══════════════════════════════ MAIN SCREEN ══════════════════════════════ -->
+<div class="screen hidden" id="screen-main">
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-avatar">🏪</div>
+    <div class="topbar-info">
+      <div class="topbar-name" id="topbar-shop">Ma Boutique</div>
+      <div class="topbar-status" id="topbar-status">Chargement...</div>
     </div>
+    <button class="topbar-logout" onclick="seDeconnecter()">Quitter</button>
+  </div>
+
+  <!-- PAGES -->
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+
+    <!-- PAGE PROFIL -->
+    <div class="page active" id="page-profil">
+      <div class="scroll">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Mon Profil</div>
+            <div class="page-sub">Informations de votre boutique</div>
+          </div>
+        </div>
+        <div id="profil-content">
+          <div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Chargement...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE CATEGORIES -->
+    <div class="page" id="page-categories">
+      <div class="scroll">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Catégories</div>
+            <div class="page-sub" id="cat-count">0 catégorie</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon purple">🗂️</div>
+            <div><div class="card-title">Nouvelle catégorie</div></div>
+          </div>
+          <div class="field">
+            <label>Nom</label>
+            <input type="text" id="cat-nom" placeholder="Ex: Beauté, Vêtements..." maxlength="100">
+          </div>
+          <button class="btn-primary" onclick="ajouterCategorie()">
+            <span>➕</span> Ajouter
+          </button>
+        </div>
+
+        <div class="section-label">Mes catégories</div>
+        <div class="card" id="liste-categories-wrap">
+          <div id="liste-categories">
+            <div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">Aucune catégorie</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE PRODUITS -->
+    <div class="page" id="page-produits">
+      <div class="scroll">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Produits</div>
+            <div class="page-sub" id="prod-count">0 produit</div>
+          </div>
+        </div>
+
+        <div class="section-label">Mes produits</div>
+        <div class="card" id="liste-produits-wrap">
+          <div id="liste-produits">
+            <div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Aucun produit</div></div>
+          </div>
+        </div>
+        <div class="fab">
+          <button class="fab-btn" onclick="openAddProduct()">
+            <span>➕</span> Nouveau produit
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="showPage('profil',this)">
+      <span class="nav-icon">👤</span>Profil
+    </button>
+    <button class="nav-btn" onclick="showPage('categories',this)">
+      <span class="nav-icon">🗂️</span>Catégories
+    </button>
+    <button class="nav-btn" onclick="showPage('produits',this)">
+      <span class="nav-icon">📦</span>Produits
+    </button>
   </div>
 </div>
 
-<!-- PAGE CATEGORIES -->
-<div id="page-categories" class="page">
-  <div class="card">
-    <div class="card-title">➕ Nouvelle catégorie</div>
-    <div class="form-group">
-      <label>Nom de la catégorie</label>
-      <input type="text" id="cat-nom" placeholder="Ex: Beauté, Vêtements..." maxlength="100">
-    </div>
-    <button class="btn" onclick="ajouterCategorie()">Ajouter la catégorie</button>
-  </div>
+<!-- ══════════════════════════════ MODALS ══════════════════════════════ -->
 
-  <div class="card">
-    <div class="card-title">🗂️ Mes catégories</div>
-    <div id="liste-categories">
-      <div class="empty-state"><div class="icon">🗂️</div><div>Aucune catégorie</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- PAGE PRODUITS -->
-<div id="page-produits" class="page">
-  <div class="card">
-    <div class="card-title">➕ Nouveau produit</div>
-    <div class="form-group">
-      <label>Nom du produit *</label>
-      <input type="text" id="prod-nom" placeholder="Ex: Crème hydratante" maxlength="200">
-    </div>
-    <div class="form-group">
-      <label>Description</label>
-      <textarea id="prod-desc" placeholder="Description optionnelle..."></textarea>
-    </div>
-    <div class="form-group">
-      <label>Catégorie *</label>
-      <select id="prod-cat">
-        <option value="">— Choisir une catégorie —</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Prix ($) *</label>
-      <input type="number" id="prod-prix" placeholder="0.00" min="0" step="0.01">
-    </div>
-    <div class="form-group">
-      <label>Taille / Variante</label>
-      <input type="text" id="prod-taille" placeholder="Ex: 250ml, S/M/L... (optionnel)">
-    </div>
-    <button class="btn" onclick="ajouterProduit()">Ajouter le produit</button>
-  </div>
-
-  <div class="card">
-    <div class="card-title">📦 Mes produits</div>
-    <div id="liste-produits">
-      <div class="empty-state"><div class="icon">📦</div><div>Aucun produit</div></div>
-    </div>
-  </div>
-</div>
-
-<!-- PAGE CONNEXION -->
-<div id="page-connexion" class="page">
-  <div id="connexion-form">
-    <div class="card">
-      <div class="card-title">🔑 Connexion</div>
-      <div class="form-group">
-        <label>Mot de passe</label>
-        <input type="password" id="login-password" placeholder="Votre mot de passe">
-      </div>
-      <button class="btn" onclick="seConnecter()">Se connecter</button>
-    </div>
-    <div class="card">
-      <div class="card-title">📝 Inscription</div>
-      <div class="form-group">
-        <label>Nom de la boutique *</label>
-        <input type="text" id="reg-nom" placeholder="Ex: Matador Shop">
-      </div>
-      <div class="form-group">
-        <label>Description</label>
-        <textarea id="reg-desc" placeholder="Décrivez votre boutique..."></textarea>
-      </div>
-      <div class="form-group">
-        <label>Téléphone</label>
-        <input type="tel" id="reg-tel" placeholder="+243...">
-      </div>
-      <div class="form-group">
-        <label>Adresse</label>
-        <input type="text" id="reg-adr" placeholder="Votre adresse">
-      </div>
-      <div class="form-group">
-        <label>Mot de passe *</label>
-        <input type="password" id="reg-password" placeholder="Min. 4 caractères">
-        <div class="hint">⚠️ Choisissez un mot de passe sécurisé</div>
-      </div>
-      <button class="btn" onclick="sInscrire()">Créer ma boutique</button>
-    </div>
-  </div>
-  <div id="logout-section" style="display:none">
-    <div class="card">
-      <div class="card-title">✅ Connecté</div>
-      <div class="profile-row">
-        <span class="lbl">Statut</span>
-        <span class="val">Session active</span>
-      </div>
-    </div>
-    <button class="btn danger" onclick="seDeconnecter()">🔒 Se déconnecter</button>
-  </div>
-</div>
-
-<!-- Modal édition -->
-<div class="modal-overlay" id="edit-modal">
+<!-- Modal générique -->
+<div class="modal-overlay" id="modal">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title" id="modal-title">Modifier</div>
     <div id="modal-body"></div>
-    <button class="btn" id="modal-confirm-btn" style="margin-top:12px">Confirmer</button>
-    <button class="btn secondary" onclick="closeModal()">Annuler</button>
+    <button class="btn-primary" id="modal-ok" style="margin-top:14px">Confirmer</button>
+    <button class="btn-cancel" onclick="closeModal()">Annuler</button>
   </div>
 </div>
 
+<!-- Modal ajout produit -->
+<div class="modal-overlay" id="modal-add-product">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📦 Nouveau produit</div>
+    <div class="field"><label>Nom *</label><input type="text" id="ap-nom" placeholder="Nom du produit" maxlength="200"></div>
+    <div class="field"><label>Description</label><textarea id="ap-desc" placeholder="Description optionnelle..."></textarea></div>
+    <div class="field"><label>Catégorie *</label><select id="ap-cat"><option value="">— Choisir —</option></select></div>
+    <div class="field"><label>Prix ($) *</label><input type="number" id="ap-prix" placeholder="0.00" min="0" step="0.01"></div>
+    <div class="field"><label>Taille / Variante</label><input type="text" id="ap-taille" placeholder="Ex: 250ml, S/M/L..."></div>
+    <button class="btn-primary" onclick="ajouterProduit()" style="margin-top:6px"><span>➕</span> Ajouter le produit</button>
+    <button class="btn-cancel" onclick="document.getElementById('modal-add-product').classList.remove('open')">Annuler</button>
+  </div>
+</div>
+
+<!-- Loader -->
+<div class="loader-overlay" id="loader">
+  <div class="spinner"></div>
+</div>
+
+<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────
+// ── CONFIG ────────────────────────────────
 const N8N_WEBHOOK = 'https://auto.jessydjonga.site/webhook/tma-vendeur';
 
-// ── INIT TELEGRAM ─────────────────────────────────────────
+// ── TELEGRAM ──────────────────────────────
 const tg = window.Telegram?.WebApp;
-if (tg) {
-  tg.ready();
-  tg.expand();
-  tg.setHeaderColor('secondary_bg_color');
-}
+if (tg) { tg.ready(); tg.expand(); }
 
-const chatId = tg?.initDataUnsafe?.user?.id?.toString() || 'test_user';
-const userName = tg?.initDataUnsafe?.user?.first_name || 'Utilisateur';
-document.getElementById('user-name').textContent = userName;
+const chatId   = tg?.initDataUnsafe?.user?.id?.toString() || 'test_' + Date.now();
+const userName = tg?.initDataUnsafe?.user?.first_name || 'Vendeur';
 
-// ── STATE ─────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────
+let profile    = null;
 let categories = [];
-let produits = [];
-let authenticated = false;
+let produits   = [];
 
-// ── NAVIGATION ────────────────────────────────────────────
-function showTab(tab) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + tab).classList.add('active');
-  event.currentTarget.classList.add('active');
-
-  if (tab === 'categories') chargerCategories();
-  if (tab === 'produits') { chargerCategories(); chargerProduits(); }
-  if (tab === 'profil') chargerProfil();
-}
-
-// ── TOAST ─────────────────────────────────────────────────
-function toast(msg, duration = 2500) {
+// ── UTILS ─────────────────────────────────
+function toast(msg, duration=2800) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), duration);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), duration);
 }
-
-// ── API CALL → n8n ────────────────────────────────────────
-async function callN8n(action, payload = {}) {
+function loader(show) {
+  document.getElementById('loader').classList.toggle('show', show);
+}
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+async function api(action, payload={}) {
   try {
-    const res = await fetch(N8N_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const r = await fetch(N8N_WEBHOOK, {
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ chatId, action, ...payload })
     });
-    return await res.json();
-  } catch(e) {
-    console.error(e);
-    return { error: 'Erreur réseau' };
+    return await r.json();
+  } catch(e) { return { error: 'Erreur réseau' }; }
+}
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.toggle('hidden', s.id !== id);
+  });
+}
+
+// ── AUTH TABS ─────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.tab-sw-btn').forEach((b,i) =>
+    b.classList.toggle('active', (i===0 && tab==='login') || (i===1 && tab==='register')));
+  document.getElementById('fs-login').classList.toggle('active', tab==='login');
+  document.getElementById('fs-register').classList.toggle('active', tab==='register');
+}
+
+// ── LOGIN ─────────────────────────────────
+async function seConnecter() {
+  const pwd = document.getElementById('login-password').value;
+  if (!pwd) { toast('⚠️ Entrez votre mot de passe'); return; }
+  loader(true);
+  const r = await api('login', { password: pwd });
+  loader(false);
+  if (r.success) {
+    toast('✅ Connecté !');
+    await initMainScreen();
+  } else {
+    toast('❌ Mot de passe incorrect');
+    document.getElementById('login-password').value = '';
   }
 }
 
-// ── PROFIL ────────────────────────────────────────────────
-async function chargerProfil() {
-  const data = await callN8n('get_profile');
-  const el = document.getElementById('profil-content');
+// ── REGISTER ──────────────────────────────
+async function sInscrire() {
+  const nom = document.getElementById('reg-nom').value.trim();
+  const pwd = document.getElementById('reg-password').value;
+  if (!nom) { toast('⚠️ Nom de boutique requis'); return; }
+  if (!pwd || pwd.length < 4) { toast('⚠️ Mot de passe trop court (min 4)'); return; }
+  loader(true);
+  const r = await api('register', {
+    nom_boutique: nom,
+    description:  document.getElementById('reg-desc').value.trim() || null,
+    telephone:    document.getElementById('reg-tel').value.trim() || null,
+    adresse:      document.getElementById('reg-adr').value.trim() || null,
+    password:     pwd
+  });
+  loader(false);
+  if (r.success) {
+    toast('🎉 Boutique créée ! En attente de validation.');
+    await initMainScreen();
+  } else toast(r.error || '⚠️ Erreur lors de l\'inscription');
+}
 
-  if (!data || data.error || !data.nom_boutique) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">🔒</div><div>Connectez-vous pour voir votre profil</div></div>`;
-    return;
-  }
-  authenticated = true;
-  document.getElementById('logout-section').style.display = 'block';
-  document.getElementById('connexion-form').style.display = 'none';
+// ── MAIN SCREEN INIT ──────────────────────
+async function initMainScreen() {
+  showScreen('screen-main');
+  await Promise.all([chargerProfil(), chargerCategories(), chargerProduits()]);
+}
+
+// ── LOGOUT ────────────────────────────────
+async function seDeconnecter() {
+  loader(true);
+  await api('logout');
+  loader(false);
+  profile = null; categories = []; produits = [];
+  document.getElementById('login-password').value = '';
+  showScreen('screen-login');
+  toast('👋 Déconnecté');
+}
+
+// ── NAVIGATION ────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── PROFIL ────────────────────────────────
+async function chargerProfil() {
+  const d = await api('get_profile');
+  if (!d || d.error || !d.nom_boutique) return;
+  profile = d;
+  document.getElementById('topbar-shop').textContent = d.nom_boutique;
 
   const statusMap = {
-    'en_attente': '<span class="badge pending">⏳ En attente</span>',
-    'approuvé':   '<span class="badge approved">✅ Approuvé</span>',
-    'approuve':   '<span class="badge approved">✅ Approuvé</span>',
-    'rejeté':     '<span class="badge rejected">❌ Rejeté</span>',
+    'en_attente': { cls:'pending', txt:'⏳ En attente' },
+    'approuvé':   { cls:'approved', txt:'✅ Approuvé' },
+    'approuve':   { cls:'approved', txt:'✅ Approuvé' },
+    'rejeté':     { cls:'rejected', txt:'❌ Rejeté' },
+    'rejete':     { cls:'rejected', txt:'❌ Rejeté' },
   };
-  const statut = statusMap[data.statut?.toLowerCase()] || `<span class="badge pending">${data.statut || '-'}</span>`;
+  const st = statusMap[(d.statut||'').toLowerCase()] || { cls:'pending', txt:'❓ Inconnu' };
+  document.getElementById('topbar-status').innerHTML = `<span class="badge ${st.cls}" style="padding:2px 8px;font-size:11px">${st.txt}</span>`;
 
-  el.innerHTML = `
-    <div class="card">
-      <div class="card-title">🏪 Ma boutique</div>
-      <div class="profile-row"><span class="lbl">Nom</span><span class="val">${data.nom_boutique || '-'}</span></div>
-      <div class="profile-row"><span class="lbl">Description</span><span class="val">${data.description || '-'}</span></div>
-      <div class="profile-row"><span class="lbl">Téléphone</span><span class="val">${data.telephone || '-'}</span></div>
-      <div class="profile-row"><span class="lbl">Adresse</span><span class="val">${data.adresse || '-'}</span></div>
-      <div class="profile-row"><span class="lbl">Statut</span><span class="val">${statut}</span></div>
+  document.getElementById('profil-content').innerHTML = `
+    <div class="profile-hero">
+      <div class="profile-avatar">🏪</div>
+      <div class="profile-name">${escHtml(d.nom_boutique)}</div>
+      <div class="profile-desc">${escHtml(d.description||'Aucune description')}</div>
+      <span class="badge ${st.cls}">${st.txt}</span>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-cats">${categories.length}</div>
+        <div class="stat-lbl">Catégories</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-prods">${produits.length}</div>
+        <div class="stat-lbl">Produits</div>
+      </div>
+    </div>
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="lbl">📞 Téléphone</div>
+        <div class="val">${escHtml(d.telephone||'-')}</div>
+      </div>
+      <div class="info-cell">
+        <div class="lbl">📍 Adresse</div>
+        <div class="val">${escHtml(d.adresse||'-')}</div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div style="font-size:13px;color:var(--sub);text-align:center">
+        Vendeur enregistré · ID ${escHtml(chatId)}
+      </div>
     </div>`;
 }
 
-// ── CATEGORIES ────────────────────────────────────────────
+// ── CATEGORIES ────────────────────────────
 async function chargerCategories() {
-  const data = await callN8n('list_categories');
+  const data = await api('list_categories');
   categories = Array.isArray(data) ? data : [];
   renderCategories();
   updateCatSelect();
+  document.getElementById('cat-count').textContent =
+    categories.length + (categories.length > 1 ? ' catégories' : ' catégorie');
+  const el = document.getElementById('stat-cats');
+  if (el) el.textContent = categories.length;
 }
 
 function renderCategories() {
   const el = document.getElementById('liste-categories');
   if (!categories.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">🗂️</div><div>Aucune catégorie</div></div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">Aucune catégorie.<br>Ajoutez-en une ci-dessus.</div></div>`;
     return;
   }
   el.innerHTML = categories.map(c => `
     <div class="list-item">
-      <div class="info"><div class="name">${c.nom}</div></div>
-      <div class="actions">
-        <button class="icon-btn" onclick="editCategorie('${escHtml(c.nom)}')" title="Modifier">✏️</button>
-        <button class="icon-btn danger" onclick="deleteCategorie('${escHtml(c.nom)}')" title="Supprimer">🗑️</button>
+      <div class="item-icon">🗂️</div>
+      <div class="item-info">
+        <div class="item-name">${escHtml(c.nom)}</div>
+        <div class="item-meta">${produits.filter(p=>p.categorie_nom===c.nom).length} produit(s)</div>
+      </div>
+      <div class="item-actions">
+        <button class="icon-btn edit" onclick="editCategorie('${escHtml(c.nom)}')" title="Modifier">✏️</button>
+        <button class="icon-btn del" onclick="deleteCategorie('${escHtml(c.nom)}')" title="Supprimer">🗑️</button>
       </div>
     </div>`).join('');
 }
 
 function updateCatSelect() {
-  const sel = document.getElementById('prod-cat');
+  const sel = document.getElementById('ap-cat');
   sel.innerHTML = '<option value="">— Choisir une catégorie —</option>' +
-    categories.map(c => `<option value="${escHtml(c.nom)}">${c.nom}</option>`).join('');
+    categories.map(c => `<option value="${escHtml(c.nom)}">${escHtml(c.nom)}</option>`).join('');
 }
 
 async function ajouterCategorie() {
   const nom = document.getElementById('cat-nom').value.trim();
   if (!nom || nom.length < 2) { toast('⚠️ Nom trop court'); return; }
-  const r = await callN8n('add_category', { nom });
+  loader(true);
+  const r = await api('add_category', { nom });
+  loader(false);
   if (r.success) {
     toast('✅ Catégorie ajoutée !');
     document.getElementById('cat-nom').value = '';
-    chargerCategories();
-  } else {
-    toast(r.error || '⚠️ Erreur');
-  }
+    await chargerCategories();
+  } else toast(r.error || '⚠️ Erreur');
 }
 
 function editCategorie(nom) {
-  document.getElementById('modal-title').textContent = '✏️ Renommer la catégorie';
+  document.getElementById('modal-title').innerHTML = '✏️ Renommer';
   document.getElementById('modal-body').innerHTML = `
-    <div class="form-group">
-      <label>Ancien nom</label>
-      <input type="text" value="${nom}" disabled style="opacity:.6">
-    </div>
-    <div class="form-group">
-      <label>Nouveau nom</label>
-      <input type="text" id="modal-new-cat-nom" placeholder="Nouveau nom" value="${nom}">
-    </div>`;
-  document.getElementById('modal-confirm-btn').onclick = async () => {
-    const newNom = document.getElementById('modal-new-cat-nom').value.trim();
+    <div class="field"><label>Nouveau nom</label>
+    <input type="text" id="m-cat-nom" value="${escHtml(nom)}"></div>`;
+  document.getElementById('modal-ok').onclick = async () => {
+    const newNom = document.getElementById('m-cat-nom').value.trim();
     if (!newNom || newNom.length < 2) { toast('⚠️ Nom trop court'); return; }
-    const r = await callN8n('update_category', { oldNom: nom, newNom });
-    if (r.success) { toast('✅ Catégorie mise à jour !'); closeModal(); chargerCategories(); }
+    loader(true); closeModal();
+    const r = await api('update_category', { oldNom: nom, newNom });
+    loader(false);
+    if (r.success) { toast('✅ Catégorie renommée !'); chargerCategories(); }
     else toast(r.error || '⚠️ Erreur');
   };
-  document.getElementById('edit-modal').classList.add('open');
+  document.getElementById('modal').classList.add('open');
 }
 
 async function deleteCategorie(nom) {
-  if (!confirm(`Supprimer la catégorie "${nom}" ?`)) return;
-  const r = await callN8n('delete_category', { nom });
-  if (r.success) { toast('🗑️ Supprimée !'); chargerCategories(); }
-  else toast(r.error || '⚠️ Erreur');
+  document.getElementById('modal-title').innerHTML = '🗑️ Supprimer';
+  document.getElementById('modal-body').innerHTML = `
+    <p style="color:var(--sub);font-size:14px">Supprimer la catégorie <strong style="color:var(--text)">${escHtml(nom)}</strong> ?<br>Cette action est irréversible.</p>`;
+  document.getElementById('modal-ok').className = 'btn-danger';
+  document.getElementById('modal-ok').textContent = '🗑️ Oui, supprimer';
+  document.getElementById('modal-ok').onclick = async () => {
+    loader(true); closeModal();
+    const r = await api('delete_category', { nom });
+    loader(false);
+    document.getElementById('modal-ok').className = 'btn-primary';
+    document.getElementById('modal-ok').textContent = 'Confirmer';
+    if (r.success) { toast('🗑️ Supprimée !'); chargerCategories(); }
+    else toast(r.error || '⚠️ Erreur');
+  };
+  document.getElementById('modal').classList.add('open');
 }
 
-// ── PRODUITS ──────────────────────────────────────────────
+// ── PRODUITS ──────────────────────────────
 async function chargerProduits() {
-  const data = await callN8n('list_products');
+  const data = await api('list_products');
   produits = Array.isArray(data) ? data : [];
   renderProduits();
+  document.getElementById('prod-count').textContent =
+    produits.length + (produits.length > 1 ? ' produits' : ' produit');
+  const el = document.getElementById('stat-prods');
+  if (el) el.textContent = produits.length;
 }
 
 function renderProduits() {
   const el = document.getElementById('liste-produits');
   if (!produits.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">📦</div><div>Aucun produit</div></div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Aucun produit.<br>Appuyez sur + pour en ajouter.</div></div>`;
     return;
   }
   el.innerHTML = produits.map(p => `
     <div class="list-item">
-      <div class="info">
-        <div class="name">${p.nom}</div>
-        <div class="meta">${p.prix} $ ${p.taille ? '· ' + p.taille : ''}</div>
+      <div class="item-icon">📦</div>
+      <div class="item-info">
+        <div class="item-name">${escHtml(p.nom)}</div>
+        <div class="item-meta">
+          <strong style="color:var(--accent2)">${p.prix} $</strong>
+          ${p.taille ? ' · ' + escHtml(p.taille) : ''}
+          ${p.description ? ' · <em>' + escHtml(p.description.substring(0,40)) + (p.description.length>40?'...':'') + '</em>' : ''}
+        </div>
       </div>
-      <div class="actions">
-        <button class="icon-btn" onclick="editProduit('${escHtml(p.nom)}')" title="Modifier">✏️</button>
-        <button class="icon-btn danger" onclick="deleteProduit('${escHtml(p.nom)}')" title="Supprimer">🗑️</button>
+      <div class="item-actions">
+        <button class="icon-btn edit" onclick="editProduit('${escHtml(p.nom)}')" title="Modifier">✏️</button>
+        <button class="icon-btn del" onclick="deleteProduit('${escHtml(p.nom)}')" title="Supprimer">🗑️</button>
       </div>
     </div>`).join('');
 }
 
-async function ajouterProduit() {
-  const nom   = document.getElementById('prod-nom').value.trim();
-  const desc  = document.getElementById('prod-desc').value.trim();
-  const cat   = document.getElementById('prod-cat').value;
-  const prix  = parseFloat(document.getElementById('prod-prix').value);
-  const taille = document.getElementById('prod-taille').value.trim();
+function openAddProduct() {
+  updateCatSelect();
+  ['ap-nom','ap-desc','ap-prix','ap-taille'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ap-cat').value = '';
+  document.getElementById('modal-add-product').classList.add('open');
+}
 
+async function ajouterProduit() {
+  const nom  = document.getElementById('ap-nom').value.trim();
+  const cat  = document.getElementById('ap-cat').value;
+  const prix = parseFloat(document.getElementById('ap-prix').value);
   if (!nom || nom.length < 2) { toast('⚠️ Nom requis'); return; }
   if (!cat) { toast('⚠️ Choisissez une catégorie'); return; }
   if (isNaN(prix) || prix <= 0) { toast('⚠️ Prix invalide'); return; }
-
-  const r = await callN8n('add_product', { nom, desc: desc || null, cat, prix, taille: taille || null });
-  if (r.success) {
-    toast('✅ Produit ajouté !');
-    ['prod-nom','prod-desc','prod-prix','prod-taille'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('prod-cat').value = '';
-    chargerProduits();
-  } else toast(r.error || '⚠️ Erreur');
+  loader(true);
+  document.getElementById('modal-add-product').classList.remove('open');
+  const r = await api('add_product', {
+    nom, cat, prix,
+    desc:   document.getElementById('ap-desc').value.trim() || null,
+    taille: document.getElementById('ap-taille').value.trim() || null
+  });
+  loader(false);
+  if (r.success) { toast('✅ Produit ajouté !'); await chargerProduits(); }
+  else toast(r.error || '⚠️ Erreur');
 }
 
 function editProduit(nom) {
   const p = produits.find(x => x.nom === nom);
-  document.getElementById('modal-title').textContent = '✏️ Modifier le produit';
+  if (!p) return;
+  document.getElementById('modal-title').innerHTML = '✏️ Modifier le produit';
   document.getElementById('modal-body').innerHTML = `
-    <div class="form-group"><label>Nom</label><input type="text" id="m-nom" value="${escHtml(p.nom)}"></div>
-    <div class="form-group"><label>Description</label><textarea id="m-desc">${escHtml(p.description || '')}</textarea></div>
-    <div class="form-group"><label>Prix ($)</label><input type="number" id="m-prix" value="${p.prix}" min="0" step="0.01"></div>
-    <div class="form-group"><label>Taille</label><input type="text" id="m-taille" value="${escHtml(p.taille || '')}"></div>`;
-  document.getElementById('modal-confirm-btn').onclick = async () => {
-    const newNom  = document.getElementById('m-nom').value.trim();
-    const newDesc = document.getElementById('m-desc').value.trim();
-    const newPrix = parseFloat(document.getElementById('m-prix').value);
-    const newTail = document.getElementById('m-taille').value.trim();
+    <div class="field"><label>Nom</label><input type="text" id="m-p-nom" value="${escHtml(p.nom)}"></div>
+    <div class="field"><label>Description</label><textarea id="m-p-desc">${escHtml(p.description||'')}</textarea></div>
+    <div class="field"><label>Prix ($)</label><input type="number" id="m-p-prix" value="${p.prix}" min="0" step="0.01"></div>
+    <div class="field"><label>Taille</label><input type="text" id="m-p-taille" value="${escHtml(p.taille||'')}"></div>`;
+  document.getElementById('modal-ok').className = 'btn-primary';
+  document.getElementById('modal-ok').textContent = 'Confirmer';
+  document.getElementById('modal-ok').onclick = async () => {
+    const newNom  = document.getElementById('m-p-nom').value.trim();
+    const newPrix = parseFloat(document.getElementById('m-p-prix').value);
     if (!newNom || isNaN(newPrix) || newPrix <= 0) { toast('⚠️ Données invalides'); return; }
-    const r = await callN8n('update_product', { oldNom: nom, nom: newNom, desc: newDesc || null, prix: newPrix, taille: newTail || null });
-    if (r.success) { toast('✅ Produit mis à jour !'); closeModal(); chargerProduits(); }
+    loader(true); closeModal();
+    const r = await api('update_product', {
+      oldNom: nom, nom: newNom, prix: newPrix,
+      desc:   document.getElementById('m-p-desc').value.trim() || null,
+      taille: document.getElementById('m-p-taille').value.trim() || null
+    });
+    loader(false);
+    if (r.success) { toast('✅ Produit mis à jour !'); chargerProduits(); }
     else toast(r.error || '⚠️ Erreur');
   };
-  document.getElementById('edit-modal').classList.add('open');
+  document.getElementById('modal').classList.add('open');
 }
 
 async function deleteProduit(nom) {
-  if (!confirm(`Supprimer "${nom}" ?`)) return;
-  const r = await callN8n('delete_product', { nom });
-  if (r.success) { toast('🗑️ Supprimé !'); chargerProduits(); }
-  else toast(r.error || '⚠️ Erreur');
+  document.getElementById('modal-title').innerHTML = '🗑️ Supprimer';
+  document.getElementById('modal-body').innerHTML = `
+    <p style="color:var(--sub);font-size:14px">Supprimer le produit <strong style="color:var(--text)">${escHtml(nom)}</strong> ?<br>Cette action est irréversible.</p>`;
+  document.getElementById('modal-ok').className = 'btn-danger';
+  document.getElementById('modal-ok').textContent = '🗑️ Oui, supprimer';
+  document.getElementById('modal-ok').onclick = async () => {
+    loader(true); closeModal();
+    const r = await api('delete_product', { nom });
+    loader(false);
+    document.getElementById('modal-ok').className = 'btn-primary';
+    document.getElementById('modal-ok').textContent = 'Confirmer';
+    if (r.success) { toast('🗑️ Supprimé !'); chargerProduits(); }
+    else toast(r.error || '⚠️ Erreur');
+  };
+  document.getElementById('modal').classList.add('open');
 }
 
-// ── CONNEXION ─────────────────────────────────────────────
-async function seConnecter() {
-  const pwd = document.getElementById('login-password').value;
-  if (!pwd) { toast('⚠️ Entrez votre mot de passe'); return; }
-  const r = await callN8n('login', { password: pwd });
-  if (r.success) {
-    toast('✅ Connecté !');
-    authenticated = true;
-    document.getElementById('connexion-form').style.display = 'none';
-    document.getElementById('logout-section').style.display = 'block';
-    chargerProfil();
-  } else toast('❌ Mot de passe incorrect');
-}
-
-async function sInscrire() {
-  const nom  = document.getElementById('reg-nom').value.trim();
-  const desc = document.getElementById('reg-desc').value.trim();
-  const tel  = document.getElementById('reg-tel').value.trim();
-  const adr  = document.getElementById('reg-adr').value.trim();
-  const pwd  = document.getElementById('reg-password').value;
-
-  if (!nom) { toast('⚠️ Nom de boutique requis'); return; }
-  if (!pwd || pwd.length < 4) { toast('⚠️ Mot de passe trop court (min 4)'); return; }
-
-  const r = await callN8n('register', {
-    nom_boutique: nom, description: desc || null,
-    telephone: tel || null, adresse: adr || null, password: pwd
-  });
-  if (r.success) {
-    toast('🎉 Boutique créée ! En attente de validation.');
-    authenticated = true;
-    document.getElementById('connexion-form').style.display = 'none';
-    document.getElementById('logout-section').style.display = 'block';
-  } else toast(r.error || '⚠️ Erreur');
-}
-
-async function seDeconnecter() {
-  await callN8n('logout');
-  authenticated = false;
-  document.getElementById('connexion-form').style.display = 'block';
-  document.getElementById('logout-section').style.display = 'none';
-  document.getElementById('profil-content').innerHTML = `<div class="empty-state"><div class="icon">🔒</div><div>Connectez-vous</div></div>`;
-  toast('👋 Déconnecté');
-}
-
-// ── MODAL ─────────────────────────────────────────────────
+// ── MODAL ─────────────────────────────────
 function closeModal() {
-  document.getElementById('edit-modal').classList.remove('open');
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('modal-ok').className = 'btn-primary';
+  document.getElementById('modal-ok').textContent = 'Confirmer';
 }
-document.getElementById('edit-modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('edit-modal')) closeModal();
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+document.getElementById('modal-add-product').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-add-product'))
+    document.getElementById('modal-add-product').classList.remove('open');
 });
 
-// ── UTILS ─────────────────────────────────────────────────
-function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-// ── AUTO-INIT ─────────────────────────────────────────────
-chargerProfil();
+// ── AUTO-CHECK SESSION ─────────────────────
+(async () => {
+  loader(true);
+  const d = await api('get_profile');
+  loader(false);
+  if (d && !d.error && d.nom_boutique) {
+    await initMainScreen();
+  }
+  // sinon reste sur login
+})();
 </script>
 </body>
 </html>

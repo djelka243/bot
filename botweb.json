@@ -1,0 +1,101 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tma-vendeur",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wh-001",
+      "name": "Webhook TMA",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-2400, 400],
+      "webhookId": "tma-vendeur"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst action   = body.action || '';\nconst chatId   = String(body.chatId || '');\nconst password = body.password || '';\nconst nom_boutique = body.nom_boutique || '';\nconst description  = body.description || null;\nconst telephone    = body.telephone || null;\nconst adresse      = body.adresse || null;\nconst nom     = body.nom || '';\nconst oldNom  = body.oldNom || '';\nconst newNom  = body.newNom || '';\nconst desc    = body.desc || null;\nconst cat     = body.cat || '';\nconst prix    = parseFloat(body.prix) || 0;\nconst taille  = body.taille || null;\n\nfunction esc(v) {\n  if (v === null || v === undefined || v === '') return 'NULL';\n  return \"'\" + String(v).replace(/'/g, \"''\") + \"'\";\n}\n\nlet sql = '';\nlet mode = action;\n\nswitch (action) {\n  case 'get_profile':\n    sql = `SELECT nom_boutique, description, telephone, adresse, statut FROM vendeurs WHERE telegram_chat_id = ${esc(chatId)} LIMIT 1`;\n    break;\n  case 'login':\n    sql = `SELECT COUNT(*) AS cnt FROM vendeurs WHERE telegram_chat_id = ${esc(chatId)} AND password = ${esc(password)}`;\n    break;\n  case 'logout':\n    sql = `UPDATE vendor_sessions SET step=NULL, authenticated=0 WHERE chat_id=${esc(chatId)}`;\n    break;\n  case 'register':\n    sql = `INSERT IGNORE INTO vendeurs (telegram_chat_id, nom_boutique, description, telephone, adresse, password, statut) VALUES (${esc(chatId)}, ${esc(nom_boutique)}, ${esc(description)}, ${esc(telephone)}, ${esc(adresse)}, ${esc(password)}, 'en_attente')`;\n    break;\n  case 'list_categories':\n    sql = `SELECT c.nom FROM categories_vendeur c JOIN vendeurs v ON v.id=c.vendeur_id WHERE v.telegram_chat_id=${esc(chatId)} ORDER BY c.nom`;\n    break;\n  case 'add_category':\n    sql = `INSERT INTO categories_vendeur (vendeur_id, nom) SELECT id, ${esc(nom)} FROM vendeurs WHERE telegram_chat_id=${esc(chatId)} LIMIT 1`;\n    break;\n  case 'update_category':\n    sql = `UPDATE categories_vendeur SET nom=${esc(newNom)} WHERE nom=${esc(oldNom)} AND vendeur_id=(SELECT id FROM vendeurs WHERE telegram_chat_id=${esc(chatId)} LIMIT 1)`;\n    break;\n  case 'delete_category':\n    sql = `DELETE FROM categories_vendeur WHERE nom=${esc(nom)} AND vendeur_id=(SELECT id FROM vendeurs WHERE telegram_chat_id=${esc(chatId)} LIMIT 1)`;\n    break;\n  case 'list_products':\n    sql = `SELECT p.nom, p.prix, p.description, p.taille FROM produits_vendeur p JOIN vendeurs v ON v.id=p.vendeur_id WHERE v.telegram_chat_id=${esc(chatId)} ORDER BY p.nom`;\n    break;\n  case 'add_product':\n    sql = `INSERT INTO produits_vendeur (vendeur_id, categorie_id, nom, description, prix, taille) SELECT v.id, c.id, ${esc(nom)}, ${esc(desc)}, ${prix}, ${esc(taille)} FROM vendeurs v LEFT JOIN categories_vendeur c ON c.vendeur_id=v.id AND c.nom=${esc(cat)} WHERE v.telegram_chat_id=${esc(chatId)} LIMIT 1`;\n    break;\n  case 'update_product':\n    sql = `UPDATE produits_vendeur SET nom=${esc(nom)}, description=${esc(desc)}, prix=${prix}, taille=${esc(taille)} WHERE nom=${esc(oldNom)} AND vendeur_id=(SELECT id FROM vendeurs WHERE telegram_chat_id=${esc(chatId)} LIMIT 1)`;\n    break;\n  case 'delete_product':\n    sql = `DELETE FROM produits_vendeur WHERE nom=${esc(nom)} AND vendeur_id=(SELECT id FROM vendeurs WHERE telegram_chat_id=${esc(chatId)} LIMIT 1)`;\n    break;\n  default:\n    return [{ json: { error: 'Action inconnue', action } }];\n}\n\nreturn [{ json: { action: mode, chatId, sql } }];"
+      },
+      "id": "rtr-001",
+      "name": "Router Action TMA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2200, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "sql-001",
+      "name": "SQL Execute",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [-2000, 400],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const action = $('Router Action TMA').first().json.action;\nconst rows   = $input.all().map(i => i.json);\n\nswitch (action) {\n  case 'get_profile': {\n    const d = rows[0];\n    if (!d || !d.nom_boutique) return [{ json: { error: 'Non trouvé' } }];\n    return [{ json: d }];\n  }\n  case 'login': {\n    const cnt = parseInt(rows[0]?.cnt ?? 0);\n    if (cnt > 0) {\n      const chatId = $('Router Action TMA').first().json.chatId;\n      return [{ json: { success: true, _saveSession: true, chatId } }];\n    }\n    return [{ json: { error: 'Mot de passe incorrect' } }];\n  }\n  case 'logout':\n    return [{ json: { success: true } }];\n  case 'register': {\n    const affected = rows[0]?.affectedRows || 0;\n    if (affected > 0) return [{ json: { success: true } }];\n    return [{ json: { error: 'Déjà inscrit. Utilisez la connexion.' } }];\n  }\n  case 'list_categories':\n    return [{ json: rows.filter(r => r && r.nom) }];\n  case 'add_category':\n  case 'add_product':\n  case 'update_category':\n  case 'update_product':\n  case 'delete_category':\n  case 'delete_product': {\n    const aff = rows[0]?.affectedRows ?? 0;\n    if (aff > 0) return [{ json: { success: true } }];\n    return [{ json: { error: 'Opération échouée. Vérifiez que vous êtes connecté.' } }];\n  }\n  case 'list_products':\n    return [{ json: rows.filter(r => r && r.nom) }];\n  default:\n    return [{ json: { error: 'Action non gérée' } }];\n}"
+      },
+      "id": "fmt-001",
+      "name": "Formatter Réponse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1800, 400]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json._saveSession ? `INSERT INTO vendor_sessions (chat_id, step, data, authenticated) VALUES ('${$json.chatId}', NULL, '{}', 1) ON DUPLICATE KEY UPDATE step=NULL, data='{}', authenticated=1` : 'SELECT 1' }}",
+        "options": {}
+      },
+      "id": "sql-login",
+      "name": "SQL Save Login Session",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [-1600, 320],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($('Formatter Réponse').first().json) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Content-Type", "value": "application/json" }
+            ]
+          }
+        }
+      },
+      "id": "resp-001",
+      "name": "Répondre HTTP",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-1400, 400]
+    }
+  ],
+  "connections": {
+    "Webhook TMA": { "main": [[{ "node": "Router Action TMA", "type": "main", "index": 0 }]] },
+    "Router Action TMA": { "main": [[{ "node": "SQL Execute", "type": "main", "index": 0 }]] },
+    "SQL Execute": { "main": [[{ "node": "Formatter Réponse", "type": "main", "index": 0 }]] },
+    "Formatter Réponse": { "main": [[{ "node": "SQL Save Login Session", "type": "main", "index": 0 }]] },
+    "SQL Save Login Session": { "main": [[{ "node": "Répondre HTTP", "type": "main", "index": 0 }]] }
+  },
+  "meta": { "templateCredsSetupCompleted": true }
+}
