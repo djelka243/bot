@@ -7,13 +7,13 @@
         ],
         "options": {}
       },
-      "id": "16688d96-d6a2-4d1b-8f97-359ec0b68aae",
+      "id": "1cca1c62-363e-4e0e-acc7-5a30af0a8cd4",
       "name": "WhatsApp Trigger",
       "type": "n8n-nodes-base.whatsAppTrigger",
       "typeVersion": 1,
       "position": [
-        -1232,
-        1536
+        -2112,
+        3008
       ],
       "webhookId": "71b42a57-68aa-4fcb-8359-30115b4bb1c7",
       "credentials": {
@@ -25,28 +25,28 @@
     },
     {
       "parameters": {
-        "jsCode": "// Normalise le message entrant (texte ou interaction)\nconst msg = $input.first().json;\nconst changes = msg.entry?.[0]?.changes?.[0]?.value || {};\nconst waMsg = changes.messages?.[0] || {};\nconst from = waMsg.from;\nlet text = waMsg.text?.body || '';\nconst interactiveId = waMsg.interactive?.button_reply?.id || waMsg.interactive?.list_reply?.id || '';\nconst userMessage = text || interactiveId;\nconst sessionId = 'whatsapp_' + from;\nconst orderRef = 'CMD-' + from + '-' + Date.now();\nreturn [{\n  json: {\n    chatId: from,\n    userMessage,\n    userName: 'Client',\n    sessionId,\n    orderRef,\n    isCallback: !!interactiveId\n  }\n}];"
+        "jsCode": "// Normalise le message entrant (texte ou interaction)\nconst msg = $input.first().json;\n\n// Le node WhatsApp Trigger renvoie un format déjà aplati :\n// { messaging_product, metadata, contacts, messages: [...], field }\n// On gère aussi l'ancien format brut (entry[].changes[].value) par sécurité.\nconst value = msg.entry?.[0]?.changes?.[0]?.value || msg;\nconst waMsg = value.messages?.[0] || {};\nconst from = waMsg.from;\n\n// Ignore les webhooks sans message exploitable (statuts, accusés de lecture, etc.)\nif (!from) {\n  return [];\n}\n\nlet text = waMsg.text?.body || '';\nconst interactiveId = waMsg.interactive?.button_reply?.id || waMsg.interactive?.list_reply?.id || '';\nconst userMessage = text || interactiveId;\nconst sessionId = 'whatsapp_' + from;\nconst orderRef = 'CMD-' + from + '-' + Date.now();\nreturn [{\n  json: {\n    chatId: from,\n    userMessage,\n    userName: 'Client',\n    sessionId,\n    orderRef,\n    isCallback: !!interactiveId\n  }\n}];"
       },
-      "id": "bfd30fbd-8b53-4ae4-881b-4a51cb07bf3f",
+      "id": "bed6f67c-8e19-4dd2-aa4d-4b95aa3ad667",
       "name": "Normaliser message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -928,
-        1536
+        -1808,
+        3008
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Analyse la commande utilisateur et route\nconst input = $input.first().json;\nconst msg = input.userMessage;\nlet routeTo = 'agent';\nlet vendorId = '', catId = '', prodId = '', price = '', productName = '';\nlet offset = 0;\n\nif (msg.startsWith('VENDOR|')) { vendorId = msg.split('|')[1]; routeTo = 'categories'; }\nelse if (msg.startsWith('CAT|')) { const parts = msg.split('|'); catId = parts[1]; vendorId = parts[2]; routeTo = 'products'; }\nelse if (msg.startsWith('PROD|')) { const parts = msg.split('|'); prodId = parts[1]; catId = parts[2]; vendorId = parts[3]; price = parts[4]; routeTo = 'productDetail'; }\nelse if (msg.startsWith('PAGE|')) { const parts = msg.split('|'); catId = parts[1]; offset = parseInt(parts[2]); vendorId = parts[3]; routeTo = 'products'; }\nelse if (msg.startsWith('BACK_CAT|')) { const parts = msg.split('|'); catId = parts[1]; offset = parseInt(parts[2]); vendorId = parts[3]; routeTo = 'products'; }\nelse if (msg.startsWith('ADD_CART|')) { const parts = msg.split('|'); prodId = parts[1]; price = parts[2]; catId = parts[3]; vendorId = parts[4]; productName = parts.slice(5).join('|'); routeTo = 'addToCart'; }\nelse if (msg === 'VIEW_CART') routeTo = 'viewCart';\nelse if (msg.startsWith('REMOVE_CART|')) { prodId = msg.split('|')[1]; routeTo = 'removeFromCart'; }\nelse if (msg === 'ORDER_CART') routeTo = 'orderCart';\nelse if (msg.startsWith('ORDER|')) { const parts = msg.split('|'); prodId = parts[1]; price = parts[2]; catId = parts[3]; vendorId = parts[4]; productName = parts.slice(5).join('|'); routeTo = 'agent'; }\nelse if (msg === 'HOME' || msg === '/start') routeTo = 'vendors';\n\nreturn [{ json: { ...input, routeTo, vendorId, catId, offset, prodId, price, productName } }];"
+        "jsCode": "// Analyse la commande utilisateur et route\nconst input = $input.first().json;\nconst msg = input.userMessage;\nconst chatId = input.chatId;\nlet routeTo = 'agent';\nlet vendorId = '', catId = '', prodId = '', price = '', productName = '';\nlet offset = 0;\n\n// Session globale : suit si le client est en pleine conversation de commande avec l'agent\nconst sd = $getWorkflowStaticData('global');\nif (!sd.sessions) sd.sessions = {};\nif (!sd.sessions[chatId]) sd.sessions[chatId] = { enCommande: false };\n\nif (msg.startsWith('VENDOR|')) { vendorId = msg.split('|')[1]; routeTo = 'categories'; }\nelse if (msg.startsWith('CAT|')) { const parts = msg.split('|'); catId = parts[1]; vendorId = parts[2]; routeTo = 'products'; }\nelse if (msg.startsWith('PROD|')) { const parts = msg.split('|'); prodId = parts[1]; catId = parts[2]; vendorId = parts[3]; price = parts[4]; routeTo = 'productDetail'; }\nelse if (msg.startsWith('PAGE|')) { const parts = msg.split('|'); catId = parts[1]; offset = parseInt(parts[2]); vendorId = parts[3]; routeTo = 'products'; }\nelse if (msg.startsWith('BACK_CAT|')) { const parts = msg.split('|'); catId = parts[1]; offset = parseInt(parts[2]); vendorId = parts[3]; routeTo = 'products'; }\nelse if (msg.startsWith('ADD_CART|')) { const parts = msg.split('|'); prodId = parts[1]; price = parts[2]; catId = parts[3]; vendorId = parts[4]; productName = parts.slice(5).join('|'); routeTo = 'addToCart'; }\nelse if (msg === 'VIEW_CART') routeTo = 'viewCart';\nelse if (msg.startsWith('REMOVE_CART|')) { prodId = msg.split('|')[1]; routeTo = 'removeFromCart'; }\nelse if (msg === 'ORDER_CART') { routeTo = 'orderCart'; }\nelse if (msg.startsWith('ORDER|')) { const parts = msg.split('|'); prodId = parts[1]; price = parts[2]; catId = parts[3]; vendorId = parts[4]; productName = parts.slice(5).join('|'); routeTo = 'agent'; }\nelse if (msg === 'HOME' || msg === '/start') { routeTo = 'vendors'; sd.sessions[chatId].enCommande = false; }\nelse {\n  // Texte libre : si une commande est en cours avec l'agent, on continue vers l'agent.\n  // Sinon (premier contact / question générale), on affiche les boutiques.\n  if (sd.sessions[chatId].enCommande) {\n    routeTo = 'agent';\n  } else {\n    routeTo = 'vendors';\n  }\n}\n\n// orderCart et ORDER| déclenchent l'agent pour le processus de commande -> on active le mode commande\nif (routeTo === 'orderCart' || (msg.startsWith('ORDER|'))) {\n  sd.sessions[chatId].enCommande = true;\n}\n\nreturn [{ json: { ...input, routeTo, vendorId, catId, offset, prodId, price, productName } }];"
       },
-      "id": "dee42988-63d1-4af8-85e8-8d475599e904",
+      "id": "c17bd5be-56db-47cb-8a39-78c5872eab40",
       "name": "Router navigation",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -640,
-        1536
+        -1520,
+        3008
       ]
     },
     {
@@ -246,13 +246,13 @@
         },
         "options": {}
       },
-      "id": "66b5e39e-8ea8-4265-89a8-d93df30614f3",
+      "id": "40845fef-cad2-4bc6-b24c-da437c901f9f",
       "name": "Switch route",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.1,
       "position": [
-        -336,
-        1536
+        -1216,
+        3008
       ]
     },
     {
@@ -261,13 +261,13 @@
         "query": "SELECT id, nom_boutique FROM vendeurs WHERE statut IN ('approuvé','approuve') ORDER BY nom_boutique",
         "options": {}
       },
-      "id": "db065faa-a196-431b-a2b6-588a5c86534f",
+      "id": "a2ffe557-10ea-4255-a5a3-b7572fd96462",
       "name": "SQL Vendeurs",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.5,
       "position": [
-        -32,
-        1328
+        -912,
+        2800
       ],
       "credentials": {
         "mySql": {
@@ -282,13 +282,13 @@
         "query": "{{ 'SELECT id, nom FROM categories_vendeur WHERE vendeur_id = ' + ($json.vendorId || 0) + ' ORDER BY nom' }}",
         "options": {}
       },
-      "id": "02048342-a2e0-4392-a883-58dbf7419227",
+      "id": "33b92e1a-3220-41e4-b08f-db543048ff4a",
       "name": "SQL Categories",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.5,
       "position": [
-        -32,
-        1488
+        -912,
+        2960
       ],
       "credentials": {
         "mySql": {
@@ -303,13 +303,13 @@
         "query": "{{ 'SELECT id, nom, prix, COUNT(*) OVER() AS _total FROM produits_vendeur WHERE categorie_id = ' + ($json.catId || 0) + ' ORDER BY id LIMIT 5 OFFSET ' + ($json.offset || 0) }}",
         "options": {}
       },
-      "id": "b6f74c50-ad43-48af-a807-03507538222c",
+      "id": "94f0e14d-55cd-46bf-986c-ae28934ba546",
       "name": "SQL Produits",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.5,
       "position": [
-        -32,
-        1632
+        -912,
+        3104
       ],
       "credentials": {
         "mySql": {
@@ -321,16 +321,16 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "{{ 'SELECT p.id, p.nom, p.description, p.prix, p.taille, pi.url_image AS photo_url FROM produits_vendeur p LEFT JOIN produit_image pi ON pi.produit_id = p.id WHERE p.id = ' + ($json.prodId || 0) + ' LIMIT 1' }}",
+        "query": "{{ 'SELECT p.id, p.nom, p.description, p.prix, p.taille, p.categorie_id, pi.url_image AS photo_url FROM produits_vendeur p LEFT JOIN produit_image pi ON pi.produit_id = p.id WHERE p.id = ' + ($json.prodId || 0) + ' LIMIT 1' }}",
         "options": {}
       },
-      "id": "ba330fb9-a490-464f-8795-9de82a7e6b34",
+      "id": "3b750cff-30d5-4d03-b450-75d2d7e5c54b",
       "name": "SQL Detail produit",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.5,
       "position": [
-        -32,
-        1792
+        -912,
+        3264
       ],
       "credentials": {
         "mySql": {
@@ -343,65 +343,65 @@
       "parameters": {
         "jsCode": "// Construit la réponse pour les vendeurs (liste interactive)\nconst rows = $input.all().map(i => i.json).filter(v => v.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Aucune boutique disponible.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\nconst sections = [{\n  title: 'Boutiques',\n  rows: rows.slice(0,10).map(v => ({ id: 'VENDOR|' + v.id, title: v.nom_boutique.substring(0,20), description: '' }))\n}];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Choisissez une boutique :', sections, buttonText: 'Voir les boutiques' } }];"
       },
-      "id": "d5d1efb4-f3ba-428f-a397-ae1defd24f19",
+      "id": "9c3fc936-ef76-411f-af2e-4b8ae6939c89",
       "name": "Handle vendeurs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        624,
-        1344
+        -256,
+        2816
       ]
     },
     {
       "parameters": {
         "jsCode": "// Construit la réponse pour les catégories\nconst rows = $input.all().map(i => i.json).filter(c => c.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Aucune catégorie.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\nconst sections = [{\n  title: 'Catégories',\n  rows: rows.slice(0,10).map(c => ({ id: 'CAT|' + c.id + '|' + nav.vendorId, title: c.nom.substring(0,20), description: '' }))\n}];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Choisissez une catégorie :', sections, buttonText: 'Voir catégories' } }];"
       },
-      "id": "ca28eae2-e347-4584-ab66-dcfe15da4a17",
+      "id": "a5b8fd4b-5ba1-4304-b7e0-96819453c57b",
       "name": "Handle categories",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        624,
-        1504
+        -256,
+        2976
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Construit la réponse pour les produits\nconst rows = $input.all().map(i => i.json).filter(p => p.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Aucun produit.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\nconst productRows = rows.slice(0,10).map(p => ({ id: 'PROD|' + p.id + '|' + nav.catId + '|' + nav.vendorId + '|' + p.prix, title: p.nom.substring(0,20) + ' — ' + p.prix + '$', description: '' }));\nconst sections = [{ title: 'Produits', rows: productRows }];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Produits :', sections, buttonText: 'Voir produits' } }];"
+        "jsCode": "// Construit la réponse pour les produits\nconst rows = $input.all().map(i => i.json).filter(p => p.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Aucun produit.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\n// WhatsApp : row.title <= 24 caractères, row.description <= 72 caractères\nconst productRows = rows.slice(0,10).map(p => {\n  const fullTitle = p.nom + ' — ' + p.prix + '$';\n  const title = fullTitle.length > 24 ? p.nom.substring(0, 24 - (' — ' + p.prix + '$').length) + ' — ' + p.prix + '$' : fullTitle;\n  return {\n    id: 'PROD|' + p.id + '|' + nav.catId + '|' + nav.vendorId + '|' + p.prix,\n    title: title.substring(0, 24),\n    description: p.nom.substring(0, 72)\n  };\n});\nconst sections = [{ title: 'Produits', rows: productRows }];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Produits :', sections, buttonText: 'Voir produits' } }];"
       },
-      "id": "0cbe29a2-7804-4fd7-9194-15a91ff39367",
+      "id": "e7b8f3ec-1a8d-4913-bf01-40d4d7d16403",
       "name": "Handle produits",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        624,
-        1648
+        -256,
+        3120
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Détail produit : image + boutons (ou simple texte si pas d'image)\nconst BASE_URL = 'https://mhbeauty.shop/storage/';\nconst nav = $('Router navigation').first().json;\nconst p = $input.first().json;\nif (!p || !p.id) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Produit introuvable.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\nconst rawUrl = (p.photo_url || '').trim();\nconst photoUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : BASE_URL + rawUrl.replace(/^\\//, '')) : '';\nconst caption = `📦 *${p.nom}*\\n\\n${p.description || ''}\\n\\n💰 Prix : ${p.prix}$\\n📏 Taille : ${p.taille || 'N/A'}`;\nconst addCart = `ADD_CART|${p.id}|${p.prix}|${nav.catId}|${nav.vendorId}|${p.nom}`;\nconst backCat = `BACK_CAT|${p.categorie_id}|0|${nav.vendorId}`;\nconst order = `ORDER|${p.id}|${p.prix}|${nav.catId}|${nav.vendorId}|${p.nom}`;\nconst buttons = [\n  { id: addCart, title: '🛒 Ajouter au panier' },\n  { id: backCat, title: '🔙 Continuer' },\n  { id: order, title: '✅ Commander' }\n];\nif (photoUrl) {\n  // Envoyer d'abord l'image, puis un message interactif (on renvoie deux objets ? Non, le nœud WhatsApp n'envoie qu'un seul message.\n  // On va envoyer l'image seule avec légende, et les boutons dans un second message séparé ?\n  // Pour simplifier, on préfère envoyer un message textuel avec boutons (pas d'image) pour que l'expérience soit fluide.\n  // Vous pouvez améliorer en ajoutant un second nœud plus tard.\n  return [{ json: { chatId: nav.chatId, type: 'image', image: { link: photoUrl, caption: caption } } }];\n} else {\n  return [{ json: { chatId: nav.chatId, type: 'buttons', text: caption, buttons: buttons } }];\n}"
+        "jsCode": "// Détail produit : image + boutons (ou simple texte si pas d'image)\nconst BASE_URL = 'https://mhbeauty.shop/storage/';\nconst nav = $('Router navigation').first().json;\nconst p = $input.first().json;\nif (!p || !p.id) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Produit introuvable.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\nconst rawUrl = (p.photo_url || '').trim();\nconst photoUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : BASE_URL + rawUrl.replace(/^\\//, '')) : '';\nconst caption = `📦 *${p.nom}*\\n\\n${p.description || ''}\\n\\n💰 Prix : ${p.prix}$\\n📏 Taille : ${p.taille || 'N/A'}`;\nconst addCart = `ADD_CART|${p.id}|${p.prix}|${nav.catId}|${nav.vendorId}|${p.nom}`;\nconst backCat = `BACK_CAT|${p.categorie_id}|0|${nav.vendorId}`;\nconst order = `ORDER|${p.id}|${p.prix}|${nav.catId}|${nav.vendorId}|${p.nom}`;\nconst buttons = [\n  { id: addCart, title: '🛒 Ajouter au panier' },\n  { id: backCat, title: '🔙 Continuer' },\n  { id: order, title: '✅ Commander' }\n];\nif (photoUrl) {\n  return [{ json: { chatId: nav.chatId, type: 'image', image: { link: photoUrl, caption: caption }, buttons: buttons } }];\n} else {\n  return [{ json: { chatId: nav.chatId, type: 'buttons', text: caption, buttons: buttons } }];\n}"
       },
-      "id": "d131b468-9b28-4afd-a1d4-a35c9d317d1a",
+      "id": "e77edffd-fb42-4b73-b735-843c2c074aaf",
       "name": "Handle detail produit",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        624,
-        1808
+        -256,
+        3280
       ]
     },
     {
       "parameters": {
         "jsCode": "// Gestion du panier (static data)\nconst input = $input.first().json;\nconst chatId = input.chatId;\nconst action = input.routeTo;\nconst sd = $getWorkflowStaticData('node');\nif (!sd.paniers) sd.paniers = {};\nif (!sd.paniers[chatId]) sd.paniers[chatId] = [];\nlet panier = sd.paniers[chatId];\n\nif (action === 'addToCart') {\n  const idx = panier.findIndex(i => i.prodId == input.prodId);\n  if (idx >= 0) panier[idx].qty++;\n  else panier.push({ prodId: input.prodId, nom: input.productName, prix: Number(input.price), vendorId: input.vendorId, catId: input.catId, qty: 1 });\n  sd.paniers[chatId] = panier;\n  return [{ json: { chatId, type: 'text', text: `✅ *${input.productName}* ajouté au panier !`, buttons: [\n    { text: `🛍️ Voir panier (${panier.length})`, id: 'VIEW_CART' },\n    { text: '🔙 Continuer', id: `BACK_CAT|${input.catId}|0|${input.vendorId}` },\n    { text: '🏠 Accueil', id: 'HOME' }\n  ] } }];\n}\nif (action === 'removeFromCart') {\n  panier = panier.filter(i => i.prodId != input.prodId);\n  sd.paniers[chatId] = panier;\n  return [{ json: { chatId, type: 'text', text: '🗑️ Article retiré.', buttons: [\n    { text: `🛍️ Voir panier (${panier.length})`, id: 'VIEW_CART' },\n    { text: '🏠 Accueil', id: 'HOME' }\n  ] } }];\n}\nif (action === 'orderCart') {\n  if (!panier.length) return [{ json: { chatId, type: 'text', text: '🛒 Panier vide.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n  let total = 0, desc = '';\n  const vendorId = panier[0].vendorId;\n  panier.forEach(item => { const sous = item.prix * item.qty; total += sous; desc += `• ${item.nom} x${item.qty} = ${sous.toFixed(2)}$ `; });\n  const safeProductName = `COMMANDE PANIER: ${desc.trim()} Total : ${total.toFixed(2)}$`;\n  sd.paniers[chatId] = [];\n  return [{ json: { ...input, routeTo: 'agent', vendorId, prodId: '', price: total.toFixed(2), productName: safeProductName } }];\n}\n// viewCart\nif (!panier.length) return [{ json: { chatId, type: 'text', text: '🛒 Panier vide.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\nlet total = 0, textMsg = '🛒 *Votre panier :*\\n\\n';\nconst btns = [];\npanier.forEach((item, idx) => {\n  const sous = item.prix * item.qty;\n  total += sous;\n  textMsg += `${idx+1}. ${item.nom}\\n   ${item.qty} × ${item.prix}$ = ${sous.toFixed(2)}$\\n\\n`;\n  btns.push({ text: `🗑️ ${item.nom.substring(0,15)}`, id: `REMOVE_CART|${item.prodId}` });\n});\ntextMsg += `──────────────\\n💰 *Total : ${total.toFixed(2)}$*`;\nbtns.push({ text: '✅ Commander', id: 'ORDER_CART' }, { text: '🏠 Accueil', id: 'HOME' });\nreturn [{ json: { chatId, type: 'text', text: textMsg, buttons: btns } }];"
       },
-      "id": "54cbbe8e-7ecc-4436-ae13-4f92aa0fcdbb",
+      "id": "ee4f9918-59c8-45ce-82a7-207ff7704239",
       "name": "Gestion panier",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -32,
-        1936
+        -912,
+        3408
       ]
     },
     {
@@ -454,13 +454,13 @@
         },
         "options": {}
       },
-      "id": "2bfa74f6-836c-45a2-bc94-ac392312740f",
+      "id": "7ea28ff1-3466-459a-ac0e-a8862428b3d1",
       "name": "Switch panier",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.1,
       "position": [
-        272,
-        2032
+        -608,
+        3504
       ]
     },
     {
@@ -471,13 +471,13 @@
           "systemMessage": "Tu es l'assistant de la marketplace MH Beauty. Réponds en français, ≤80 mots, émojis. Prix en dollars ($).\\n\\nSCHÉMA DB:\\n- vendeurs(id, nom_boutique, cideasypay, tokeneasypay, statut)\\n- categories_vendeur(id, nom, vendeur_id)\\n- produits_vendeur(id, nom, description, prix, taille, categorie_id)\\n- produit_image(id, url_image, produit_id)\\n- commandes(id, chat_id, nom, prenom, telephone, adresse, total, produits, statut, numero_commande, produit_id, vendeur_id)\\n\\nRÈGLES :\\n- Si productName présent → mode commande. Ne cherche pas de produit.\\n- Échappe les guillemets simples ('').\\n- Processus commande : récap, demande nom, prénom, téléphone (10 chiffres), adresse, confirmation OUI, puis appel SQL SELECT cideasypay/tokeneasypay, puis initier_paiement_easypay, puis INSERT INTO commandes, puis réponds avec numéro de commande.\\n\\nOUTILS : execute_sql, initier_paiement_easypay"
         }
       },
-      "id": "a1e3f89c-0d51-4599-94c4-2b74b3f6ad51",
+      "id": "501e17b1-7bd9-42e3-8b20-2c0d0ffae9b8",
       "name": "Agent IA",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        256,
-        2432
+        -624,
+        3904
       ]
     },
     {
@@ -487,13 +487,13 @@
           "temperature": 0
         }
       },
-      "id": "fecaa576-7966-4a87-afdb-ac8eff81f428",
+      "id": "e9d146e1-0154-4f57-9627-836a2cc9dcc9",
       "name": "GPT-4o-mini",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.1,
       "position": [
-        16,
-        2768
+        -864,
+        4240
       ],
       "credentials": {
         "openAiApi": {
@@ -508,13 +508,13 @@
         "sessionKey": "={{ $('Normaliser message').item.json.sessionId }}",
         "contextWindowLength": 10
       },
-      "id": "73796db0-a494-43bb-a4b1-1ea5fffd9960",
+      "id": "a42883aa-9ac8-49b7-9853-ad859348f05b",
       "name": "Memoire session",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        240,
-        2768
+        -640,
+        4240
       ]
     },
     {
@@ -523,13 +523,13 @@
         "query": "{{ $fromAI('query') }}",
         "options": {}
       },
-      "id": "d7c1b81e-1fa0-4a71-9beb-60c530a6d95f",
+      "id": "c9035fd8-7aeb-425b-9048-daa957584e6a",
       "name": "SQL Tool",
       "type": "n8n-nodes-base.mySqlTool",
       "typeVersion": 2.5,
       "position": [
-        448,
-        2752
+        -432,
+        4224
       ],
       "credentials": {
         "mySql": {
@@ -578,51 +578,77 @@
         },
         "options": {}
       },
-      "id": "a24ba279-3494-41ff-a9bf-b44b0445285a",
+      "id": "454de144-e4cf-491b-9856-883a1ec3fdc3",
       "name": "Paiement Easypay",
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.2,
       "position": [
-        672,
-        2736
+        -208,
+        4208
       ]
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json.output || '';\nconst chatId = $('Router navigation').first().json.chatId;\nconst clean = response.replace(/\\{[\\s\\S]*?\\}/g, '').trim();\nreturn [{ json: { chatId, type: 'text', text: clean || 'Je n\\'ai pas compris.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];"
+        "jsCode": "const response = $input.first().json.output || '';\nconst nav = $('Router navigation').first().json;\nconst chatId = nav.chatId;\nconst clean = response.replace(/\\{[\\s\\S]*?\\}/g, '').trim();\n\n// Si la réponse contient un numéro de commande (ex: CMD-xxx ou \"commande N°\"), la commande est terminée -> on quitte le mode commande\nconst sd = $getWorkflowStaticData('global');\nif (sd.sessions && sd.sessions[chatId]) {\n  if (/CMD-|commande\\s*(n°|numero|numéro|#)/i.test(response)) {\n    sd.sessions[chatId].enCommande = false;\n  }\n}\n\nreturn [{ json: { chatId, type: 'text', text: clean || 'Je n\\'ai pas compris.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];"
       },
-      "id": "4738830e-b00d-4fe5-b01c-a793365710e3",
+      "id": "4c579b52-ce6a-45c2-bd78-76da58dccc25",
       "name": "Parse agent",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        608,
-        2000
+        -272,
+        3472
       ]
     },
     {
       "parameters": {
-        "operation": "send",
-        "phoneNumberId": "975966998935081",
-        "recipientPhoneNumber": "243977196639",
-        "textBody": "={{ $json.text }}",
-        "additionalFields": {}
+        "jsCode": "// Adaptateur pour l'API WhatsApp v24.0\nconst input = $input.first().json;\n\n// Récupérer le chatId : d'abord depuis l'entrée, sinon depuis Router navigation\nlet chatId = input.chatId;\nif (!chatId) {\n  try {\n    const nav = $('Router navigation').first().json;\n    chatId = nav.chatId;\n  } catch (e) {\n    chatId = null;\n  }\n}\n\n// Si toujours introuvable, on n'envoie rien (évite le crash sur .replace)\nif (!chatId) {\n  return [];\n}\n\n// Nettoyer le numéro (enlever le '+' si présent)\nconst to = String(chatId).replace(/^\\+/, '');\n\nconst type = input.type;\nconst text = input.text || '';\nconst buttons = input.buttons || [];\nconst sections = input.sections || [];\nconst buttonText = input.buttonText || 'Choisir';\nconst image = input.image || null;\n\nlet payload = {\n  messaging_product: 'whatsapp',\n  to: to,\n  type: 'text'\n};\n\nif (type === 'list') {\n  payload.type = 'interactive';\n  payload.interactive = {\n    type: 'list',\n    header: { type: 'text', text: 'Menu' },\n    body: { text: text },\n    action: {\n      button: buttonText,\n      sections: sections\n    }\n  };\n} else if (type === 'buttons') {\n  payload.type = 'interactive';\n  payload.interactive = {\n    type: 'button',\n    body: { text: text },\n    action: {\n      buttons: buttons.slice(0, 3).map(b => ({\n        type: 'reply',\n        reply: { id: b.id, title: b.title.substring(0, 20) }\n      }))\n    }\n  };\n} else if (type === 'image') {\n  payload.type = 'image';\n  payload.image = image;\n} else if (buttons.length > 0) {\n  // type 'text' avec des boutons -> envoyer comme interactive button (max 3)\n  payload.type = 'interactive';\n  payload.interactive = {\n    type: 'button',\n    body: { text: text },\n    action: {\n      buttons: buttons.slice(0, 3).map(b => ({\n        type: 'reply',\n        reply: { id: b.id, title: (b.title || b.text || '').substring(0, 20) }\n      }))\n    }\n  };\n} else {\n  payload.text = { body: text, preview_url: false };\n}\n\nreturn [{ json: payload }];"
       },
-      "id": "f0c6370e-612c-4c70-974f-57cbb59818cb",
-      "name": "Envoyer WhatsApp",
-      "type": "n8n-nodes-base.whatsApp",
-      "typeVersion": 1,
+      "id": "da998084-fadb-4ca1-861e-c053e71ddf77",
+      "name": "Adapter WhatsApp v24",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        928,
-        1552
-      ],
-      "webhookId": "9696f5b1-c7a4-49bb-8b32-eb15ed974cdb",
-      "credentials": {
-        "whatsAppApi": {
-          "id": "POWbmsUyT6sqXiIM",
-          "name": "WhatsApp account 2"
+        32,
+        3024
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v24.0/975966998935081/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer EAAZBznZA8hDnABRgyKwRtgzgZB3brCdnF9QrZAZASbBx7kdFsMZBxTn2bS2pnE42gG81jBZBSWmQGxvMoZAqmE6WOIEOHeR5nlSojqR8tAIxNJxnMYa7EhsUmMNX9QouoMDaQ7u6lDc4vI0bvXObI2mblITf2fTZChiTAa0pm2xHNo9X6AEkowhYjwJ5HOGYJbgZDZD"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
         }
-      }
+      },
+      "id": "bced30c9-9be8-4b4a-afe1-531cf248d2a4",
+      "name": "Send WhatsApp v24",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        3024
+      ]
     }
   ],
   "connections": {
@@ -774,7 +800,7 @@
       "main": [
         [
           {
-            "node": "Envoyer WhatsApp",
+            "node": "Adapter WhatsApp v24",
             "type": "main",
             "index": 0
           }
@@ -785,7 +811,7 @@
       "main": [
         [
           {
-            "node": "Envoyer WhatsApp",
+            "node": "Adapter WhatsApp v24",
             "type": "main",
             "index": 0
           }
@@ -796,7 +822,7 @@
       "main": [
         [
           {
-            "node": "Envoyer WhatsApp",
+            "node": "Adapter WhatsApp v24",
             "type": "main",
             "index": 0
           }
@@ -807,7 +833,7 @@
       "main": [
         [
           {
-            "node": "Envoyer WhatsApp",
+            "node": "Adapter WhatsApp v24",
             "type": "main",
             "index": 0
           }
@@ -836,7 +862,7 @@
         ],
         [
           {
-            "node": "Envoyer WhatsApp",
+            "node": "Adapter WhatsApp v24",
             "type": "main",
             "index": 0
           }
@@ -902,7 +928,18 @@
       "main": [
         [
           {
-            "node": "Envoyer WhatsApp",
+            "node": "Adapter WhatsApp v24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adapter WhatsApp v24": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp v24",
             "type": "main",
             "index": 0
           }

@@ -1,0 +1,498 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const d = $('IPN - Extraire Données1').first().json;\n\nlet rawNumber = String(d.chatId).replace(/[^0-9]/g, '');\nconst to = '+' + rawNumber;\nconst text = `✅ *Paiement confirmé !*\\n\\nVotre commande ${d.order_ref} est validée via *${d.payment_channel}*.\\nMerci pour votre achat ! Notre équipe prépare votre colis 🎁`;\n\nreturn [{\n  json: {\n    messaging_product: 'whatsapp',\n    to: to,\n    type: 'text',\n    text: { body: text, preview_url: false }\n  }\n}];"
+      },
+      "id": "1ca56595-f92a-41e0-9ec0-1de9a196dcc6",
+      "name": "Build WhatsApp - Succès",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1136,
+        4032
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('IPN - Extraire Données1').first().json;\n\nlet rawNumber = String(d.chatId).replace(/[^0-9]/g, '');\nconst to = '+' + rawNumber;\nconst text = `❌ *Paiement annulé*\\n\\nVous avez annulé le paiement pour la commande ${d.order_ref}.\\n\\nSi c'est une erreur, tapez HOME pour recommencer 🔄`;\n\nreturn [{\n  json: {\n    messaging_product: 'whatsapp',\n    to: to,\n    type: 'text',\n    text: { body: text, preview_url: false }\n  }\n}];"
+      },
+      "id": "9c0cd260-3429-4e35-befc-59e8ec6b3d6b",
+      "name": "Build WhatsApp - Annulation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        4208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('IPN - Extraire Données1').first().json;\n\nif (!d.chatId || !d.order_ref || !d.payment_status) {\n  throw new Error(`Données manquantes: chatId=${d.chatId}, order_ref=${d.order_ref}, status=${d.payment_status}`);\n}\n\nlet rawNumber = String(d.chatId).replace(/[^0-9]/g, '');\nconst to = '+' + rawNumber;\nconst text = `⚠️ *Problème de paiement*\\n\\nUne erreur est survenue pour la commande ${d.order_ref}.\\nStatut reçu : ${d.payment_status}\\n\\nContactez notre support si le problème persiste.`;\n\nreturn [{\n  json: {\n    messaging_product: 'whatsapp',\n    to: to,\n    type: 'text',\n    text: { body: text, preview_url: false }\n  }\n}];"
+      },
+      "id": "b3a0a056-ecb6-49ef-a2cb-4ca19a2db71b",
+      "name": "Build WhatsApp - Erreur",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        4560
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v24.0/975966998935081/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer EAAZBznZA8hDnABRgyKwRtgzgZB3brCdnF9QrZAZASbBx7kdFsMZBxTn2bS2pnE42gG81jBZBSWmQGxvMoZAqmE6WOIEOHeR5nlSojqR8tAIxNJxnMYa7EhsUmMNX9QouoMDaQ7u6lDc4vI0bvXObI2mblITf2fTZChiTAa0pm2xHNo9X6AEkowhYjwJ5HOGYJbgZDZD"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "b2270aa8-0b8f-4164-80bf-843f562be928",
+      "name": "Send WhatsApp - Succès",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -896,
+        4032
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v24.0/975966998935081/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer EAAZBznZA8hDnABRgyKwRtgzgZB3brCdnF9QrZAZASbBx7kdFsMZBxTn2bS2pnE42gG81jBZBSWmQGxvMoZAqmE6WOIEOHeR5nlSojqR8tAIxNJxnMYa7EhsUmMNX9QouoMDaQ7u6lDc4vI0bvXObI2mblITf2fTZChiTAa0pm2xHNo9X6AEkowhYjwJ5HOGYJbgZDZD"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "01d44516-66e3-4e25-9a3d-5a7cb7774bdb",
+      "name": "Send WhatsApp - Annulation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -304,
+        4208
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v24.0/975966998935081/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer EAAZBznZA8hDnABRgyKwRtgzgZB3brCdnF9QrZAZASbBx7kdFsMZBxTn2bS2pnE42gG81jBZBSWmQGxvMoZAqmE6WOIEOHeR5nlSojqR8tAIxNJxnMYa7EhsUmMNX9QouoMDaQ7u6lDc4vI0bvXObI2mblITf2fTZChiTAa0pm2xHNo9X6AEkowhYjwJ5HOGYJbgZDZD"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "f2db04ca-48b9-4024-a70d-ee4cc637e6f9",
+      "name": "Send WhatsApp - Erreur",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -304,
+        4560
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mh-beauty-ipn",
+        "options": {}
+      },
+      "id": "9e4b06ae-d363-47cc-be3f-c71cb31af730",
+      "name": "Webhook IPN Listener1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        -2432,
+        4176
+      ],
+      "webhookId": "58884659-3d9f-47cf-8514-6754a339c3ee"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"received\" }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "aab536ef-5913-47f8-b5e5-4b7ec6876405",
+      "name": "Respond 200 OK1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -2176,
+        4176
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ipn1",
+              "name": "order_ref",
+              "value": "={{ JSON.parse($('Webhook IPN Listener1').first().json.body).transaction.order_ref }}",
+              "type": "string"
+            },
+            {
+              "id": "ipn2",
+              "name": "payment_status",
+              "value": "={{ JSON.parse($('Webhook IPN Listener1').first().json.body).payment.status }}",
+              "type": "string"
+            },
+            {
+              "id": "ipn3",
+              "name": "payment_channel",
+              "value": "={{ JSON.parse($('Webhook IPN Listener1').first().json.body).payment.channel }}",
+              "type": "string"
+            },
+            {
+              "id": "ipn4",
+              "name": "chatId",
+              "value": "={{ JSON.parse($('Webhook IPN Listener1').first().json.body).transaction.order_ref.split('-')[1] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0061c15b-95cb-42f3-b59f-765665270910",
+      "name": "IPN - Extraire Données1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1936,
+        4176
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "check-success",
+              "leftValue": "={{ $json.payment_status }}",
+              "rightValue": "SUCCESS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bc12f720-fb98-4e98-bc72-5e6253b9bf5f",
+      "name": "IPN - Succès ?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1680,
+        4176
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-cancel",
+              "leftValue": "={{ $json.payment_status }}",
+              "rightValue": "CANCELED",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8f3e0a55-b920-46ef-9d63-b9aa7ca362df",
+      "name": "IPN - Annulé ?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1440,
+        4352
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE commandes SET statut = 'confirmee' WHERE numero_commande = '{{ $json.order_ref }}';",
+        "options": {}
+      },
+      "id": "e9cde09c-d0c7-4448-b0e1-a8bec2bc8426",
+      "name": "MySQL - Marquer Confirmée1",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -1424,
+        4032
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE commandes SET statut = 'annulee' WHERE numero_commande = '{{ $json.order_ref }}';",
+        "options": {}
+      },
+      "id": "1b0f7dff-c668-4c99-88e7-be172ea019fc",
+      "name": "MySQL - Marquer Annulée1",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -896,
+        4208
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE commandes SET statut = 'annulee' WHERE numero_commande = '{{ $json.order_ref }}';",
+        "options": {}
+      },
+      "id": "b7ba4dbd-7987-4501-b4b0-769e3fa150be",
+      "name": "MySQL - Marquer Erreur1",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -896,
+        4560
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "iz6mtd3PHoQvRDqH",
+          "name": "MySQL account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Build WhatsApp - Succès": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp - Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build WhatsApp - Annulation": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp - Annulation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build WhatsApp - Erreur": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp - Erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook IPN Listener1": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 OK1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond 200 OK1": {
+      "main": [
+        [
+          {
+            "node": "IPN - Extraire Données1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IPN - Extraire Données1": {
+      "main": [
+        [
+          {
+            "node": "IPN - Succès ?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IPN - Succès ?1": {
+      "main": [
+        [
+          {
+            "node": "MySQL - Marquer Confirmée1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IPN - Annulé ?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IPN - Annulé ?1": {
+      "main": [
+        [
+          {
+            "node": "MySQL - Marquer Annulée1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "MySQL - Marquer Erreur1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL - Marquer Confirmée1": {
+      "main": [
+        [
+          {
+            "node": "Build WhatsApp - Succès",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL - Marquer Annulée1": {
+      "main": [
+        [
+          {
+            "node": "Build WhatsApp - Annulation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MySQL - Marquer Erreur1": {
+      "main": [
+        [
+          {
+            "node": "Build WhatsApp - Erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "28ba8da7efe41ef60114b1f60ca46803f555a43a3988061843f330213252ba86"
+  }
+}
