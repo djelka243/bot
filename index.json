@@ -7,13 +7,13 @@
         ],
         "options": {}
       },
-      "id": "3c76f865-f824-49db-95bb-26b6cd5321f4",
+      "id": "ada0cb9e-d6a3-4581-ac16-dec8dfada035",
       "name": "WhatsApp Trigger",
       "type": "n8n-nodes-base.whatsAppTrigger",
       "typeVersion": 1,
       "position": [
-        -7056,
-        8304
+        -6080,
+        7120
       ],
       "webhookId": "71b42a57-68aa-4fcb-8359-30115b4bb1c7",
       "credentials": {
@@ -27,26 +27,26 @@
       "parameters": {
         "jsCode": "// Normalise le message entrant (texte ou interaction)\nconst msg = $input.first().json;\nconst value = msg.entry?.[0]?.changes?.[0]?.value || msg;\nconst waMsg = value.messages?.[0] || {};\nconst from = waMsg.from;\nif (!from) return [];\nlet text = waMsg.text?.body || '';\nconst interactiveId = waMsg.interactive?.button_reply?.id || waMsg.interactive?.list_reply?.id || '';\nconst userMessage = text || interactiveId;\nconst sessionId = 'whatsapp_' + from;\nconst orderRef = 'CMD-' + from + '-' + Date.now();\nreturn [{\n  json: {\n    chatId: from,\n    userMessage,\n    userName: 'Client',\n    sessionId,\n    orderRef,\n    isCallback: !!interactiveId\n  }\n}];"
       },
-      "id": "e405659b-6d62-46e8-85d7-e05755350d35",
+      "id": "18ec5174-6d17-4a24-9675-6cd3518aaf75",
       "name": "Normaliser message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -6752,
-        8304
+        -5776,
+        7120
       ]
     },
     {
       "parameters": {
         "jsCode": "// Analyse la commande utilisateur et route\nconst input = $input.first().json;\nconst msg = input.userMessage ? input.userMessage.trim() : '';\nconst msgLower = msg.toLowerCase();\nconst chatId = input.chatId;\nlet routeTo = 'agent';\nlet vendorId = '', catId = '', prodId = '', price = '', productName = '';\nlet offset = 0;\nconst sd = $getWorkflowStaticData('global');\nif (!sd.sessions) sd.sessions = {};\nif (!sd.sessions[chatId]) sd.sessions[chatId] = { enCommande: false };\nconst salutations = ['bjr', 'bonjour', 'slt', 'salut', 'cc', 'hello', 'hey', 'bonsoir'];\nconst estUneSalutation = salutations.some(s => msgLower.startsWith(s));\nif (msg.startsWith('VENDOR|')) {\n  vendorId = msg.split('|')[1];\n  routeTo = 'categories';\n} else if (msg.startsWith('CAT|')) {\n  const parts = msg.split('|');\n  catId = parts[1]; vendorId = parts[2];\n  routeTo = 'products';\n} else if (msg.startsWith('PROD|')) {\n  const parts = msg.split('|');\n  prodId = parts[1]; catId = parts[2]; vendorId = parts[3]; price = parts[4];\n  routeTo = 'productDetail';\n} else if (msg.startsWith('PAGE|')) {\n  const parts = msg.split('|');\n  catId = parts[1]; offset = parseInt(parts[2]); vendorId = parts[3];\n  routeTo = 'products';\n} else if (msg.startsWith('BACK_CAT|')) {\n  const parts = msg.split('|');\n  catId = parts[1]; offset = parseInt(parts[2]); vendorId = parts[3];\n  routeTo = 'products';\n} else if (msg.startsWith('ADD_CART|')) {\n  const parts = msg.split('|');\n  prodId = parts[1]; price = parts[2]; catId = parts[3]; vendorId = parts[4];\n  productName = parts.slice(5).join('|');\n  routeTo = 'addToCart';\n} else if (msg === 'VIEW_CART') {\n  routeTo = 'viewCart';\n} else if (msg.startsWith('REMOVE_CART|')) {\n  prodId = msg.split('|')[1];\n  routeTo = 'removeFromCart';\n} else if (msg === 'ORDER_CART') {\n  routeTo = 'orderCart';\n} else if (msg.startsWith('ORDER|')) {\n  const parts = msg.split('|');\n  prodId = parts[1]; price = parts[2]; catId = parts[3]; vendorId = parts[4];\n  productName = parts.slice(5).join('|');\n  routeTo = 'agent';\n  sd.sessions[chatId].enCommande = true;\n} else if (msg === 'HOME' || msg === '/start') {\n  routeTo = 'vendors';\n  sd.sessions[chatId].enCommande = false;\n} else {\n  // Texte libre\n  if (estUneSalutation) {\n    routeTo = 'vendors';\n    sd.sessions[chatId].enCommande = false;\n  } else if (sd.sessions[chatId].enCommande || !input.isCallback) {\n    routeTo = 'agent';\n  } else {\n    routeTo = 'vendors';\n  }\n}\nreturn [{ json: { ...input, routeTo, vendorId, catId, offset, prodId, price, productName } }];"
       },
-      "id": "cb4c8a71-7e2a-4816-a73f-76e47ad96611",
+      "id": "5ed5c4c9-006d-414f-9b2a-0ef774409724",
       "name": "Router navigation",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -6464,
-        8304
+        -5488,
+        7120
       ]
     },
     {
@@ -246,13 +246,13 @@
         },
         "options": {}
       },
-      "id": "8dcf9ffd-834c-477a-9b4f-f5ea8eb4276f",
+      "id": "6edf6d2a-a807-42d7-bcc4-160938262c6b",
       "name": "Switch route",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.1,
       "position": [
-        -6160,
-        8304
+        -5184,
+        7120
       ]
     },
     {
@@ -261,13 +261,13 @@
         "query": "SELECT id, nom_boutique FROM vendeurs WHERE statut IN ('approuvé','approuve') ORDER BY nom_boutique",
         "options": {}
       },
-      "id": "e4a85acd-ac9a-4ab6-8765-635dacc5bf6a",
+      "id": "94c7fba9-3aab-4fc1-8c18-dac6f3699a62",
       "name": "SQL Vendeurs",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.5,
       "position": [
-        -5856,
-        8096
+        -4880,
+        6912
       ],
       "credentials": {
         "mySql": {
@@ -279,16 +279,16 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "{{ 'SELECT id, nom FROM categories_vendeur WHERE vendeur_id = ' + ($json.vendorId || 0) + ' ORDER BY nom' }}",
+        "query": "={{ 'SELECT id, nom FROM categories_vendeur WHERE vendeur_id = ' + ($json.vendorId || 0) + ' ORDER BY nom' }}",
         "options": {}
       },
-      "id": "cba9dcd8-5ea8-4072-8f93-76742aa071c8",
+      "id": "f494e839-c667-4898-bcaf-104d9da263e7",
       "name": "SQL Categories",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.5,
       "position": [
-        -5856,
-        8256
+        -4880,
+        7072
       ],
       "credentials": {
         "mySql": {
@@ -300,16 +300,16 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "{{ 'SELECT id, nom, prix, COUNT(*) OVER() AS _total FROM produits_vendeur WHERE categorie_id = ' + ($json.catId || 0) + ' ORDER BY id LIMIT 5 OFFSET ' + ($json.offset || 0) }}",
+        "query": "={{ 'SELECT id, nom, prix, COUNT(*) OVER() AS _total FROM produits_vendeur WHERE categorie_id = ' + ($json.catId || 0) + ' ORDER BY id LIMIT 5 OFFSET ' + ($json.offset || 0) }}",
         "options": {}
       },
-      "id": "e7e538f5-9792-4145-afcf-ff1bcd2f5011",
+      "id": "f13b8053-4720-4b17-af53-47605409af78",
       "name": "SQL Produits",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.5,
       "position": [
-        -5856,
-        8400
+        -4880,
+        7216
       ],
       "credentials": {
         "mySql": {
@@ -321,16 +321,16 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "{{ 'SELECT p.id, p.nom, p.description, p.prix, p.taille, p.categorie_id, pi.url_image AS photo_url FROM produits_vendeur p LEFT JOIN produit_image pi ON pi.produit_id = p.id WHERE p.id = ' + ($json.prodId || 0) + ' LIMIT 1' }}",
+        "query": "={{ 'SELECT p.id, p.nom, p.description, p.prix, p.taille, p.categorie_id, pi.url_image AS photo_url FROM produits_vendeur p LEFT JOIN produit_image pi ON pi.produit_id = p.id WHERE p.id = ' + ($json.prodId || 0) + ' LIMIT 1' }}",
         "options": {}
       },
-      "id": "670ca5e7-1d3e-4158-a2ed-e74fed6a2993",
+      "id": "74315e3d-3d70-44c1-bad5-e38f91cb9b36",
       "name": "SQL Detail produit",
       "type": "n8n-nodes-base.mySql",
       "typeVersion": 2.5,
       "position": [
-        -5856,
-        8560
+        -4880,
+        7376
       ],
       "credentials": {
         "mySql": {
@@ -343,65 +343,65 @@
       "parameters": {
         "jsCode": "const rows = $input.all().map(i => i.json).filter(v => v.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'buttons', text: 'Aucune boutique disponible.', buttons: [{ id: 'HOME', title: '🏠 Accueil' }] } }];\n}\nconst sections = [{\n  title: 'Boutiques',\n  rows: rows.slice(0, 10).map(v => ({ id: 'VENDOR|' + v.id, title: v.nom_boutique.substring(0, 24), description: '' }))\n}];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Bienvenue sur Ecom SAS Marketplace ! Choisissez une boutique :', sections, buttonText: 'Voir les boutiques' } }];"
       },
-      "id": "abe42451-ab2d-42dd-9961-a67a0d529f0c",
+      "id": "84d97a44-f3c9-4a2e-ac7c-7e063989a107",
       "name": "Handle vendeurs",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5200,
-        8112
+        -4224,
+        6928
       ]
     },
     {
       "parameters": {
         "jsCode": "const rows = $input.all().map(i => i.json).filter(c => c.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'buttons', text: 'Aucune catégorie trouvée.', buttons: [{ id: 'HOME', title: '🏠 Accueil' }] } }];\n}\nconst sections = [{\n  title: 'Catégories',\n  rows: rows.slice(0, 10).map(c => ({ id: 'CAT|' + c.id + '|' + nav.vendorId, title: c.nom.substring(0, 24), description: '' }))\n}];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Choisissez une catégorie :', sections, buttonText: 'Voir catégories' } }];"
       },
-      "id": "494387c4-ad48-4ec1-80cb-a84aa8f2ac68",
+      "id": "307bf13e-0677-4f06-a067-1a7a4d2e3db6",
       "name": "Handle categories",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5200,
-        8272
+        -4224,
+        7088
       ]
     },
     {
       "parameters": {
         "jsCode": "const rows = $input.all().map(i => i.json).filter(p => p.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'buttons', text: 'Aucun produit dans cette catégorie.', buttons: [{ id: 'HOME', title: '🏠 Accueil' }] } }];\n}\nconst total = rows[0]._total || rows.length;\nconst currentOffset = nav.offset || 0;\nconst productRows = rows.map(p => {\n  const suffix = ' — ' + p.prix + '$';\n  const maxNom = 24 - suffix.length;\n  const nom = p.nom.substring(0, maxNom > 0 ? maxNom : 1);\n  const title = (nom + suffix).substring(0, 24);\n  return {\n    id: 'PROD|' + p.id + '|' + nav.catId + '|' + nav.vendorId + '|' + p.prix,\n    title: title,\n    description: p.nom.substring(0, 72)\n  };\n});\nif (total > currentOffset + 5) {\n  productRows.push({\n    id: 'PAGE|' + nav.catId + '|' + (currentOffset + 5) + '|' + nav.vendorId,\n    title: '➡️ Page suivante',\n    description: ''\n  });\n}\nconst sections = [{ title: 'Produits', rows: productRows }];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Produits disponibles :', sections, buttonText: 'Voir produits' } }];"
       },
-      "id": "6ea0e200-e61d-404b-870d-d9313c50b5dc",
+      "id": "76863cbe-a06e-404e-8179-0a56e91d902b",
       "name": "Handle produits",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5200,
-        8416
+        -4224,
+        7232
       ]
     },
     {
       "parameters": {
         "jsCode": "const BASE_URL = 'https://mhbeauty.shop/storage/';\nconst nav = $('Router navigation').first().json;\nconst p = $input.first().json;\nif (!p || !p.id) {\n  return [{ json: { chatId: nav.chatId, type: 'buttons', text: 'Produit introuvable.', buttons: [{ id: 'HOME', title: '🏠 Accueil' }] } }];\n}\nconst rawUrl = (p.photo_url || '').trim();\nconst photoUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : BASE_URL + rawUrl.replace(/^\\//, '')) : '';\nconst caption = `📦 *${p.nom}*\\n\\n${p.description || ''}\\n\\n💰 Prix : ${p.prix}$\\n📏 Taille : ${p.taille || 'N/A'}`;\nconst addCart = `ADD_CART|${p.id}|${p.prix}|${nav.catId}|${nav.vendorId}|${p.nom}`;\nconst backCat = `BACK_CAT|${p.categorie_id}|0|${nav.vendorId}`;\nconst order = `ORDER|${p.id}|${p.prix}|${nav.catId}|${nav.vendorId}|${p.nom}`;\nconst buttons = [\n  { id: addCart, title: '🛒 Ajouter panier' },\n  { id: backCat, title: '🔙 Continuer' },\n  { id: order, title: '✅ Commander' }\n];\nif (photoUrl) {\n  return [{ json: { chatId: nav.chatId, type: 'image', image: { link: photoUrl, caption: caption }, buttons: buttons } }];\n} else {\n  return [{ json: { chatId: nav.chatId, type: 'buttons', text: caption, buttons: buttons } }];\n}"
       },
-      "id": "2384c50c-e496-4e3c-8988-2586389cad66",
+      "id": "a36a2721-e65e-4ace-a2c4-95b4b0d26428",
       "name": "Handle detail produit",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5200,
-        8576
+        -4224,
+        7392
       ]
     },
     {
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst chatId = input.chatId;\nconst action = input.routeTo;\nconst sd = $getWorkflowStaticData('node');\nif (!sd.paniers) sd.paniers = {};\nif (!sd.paniers[chatId]) sd.paniers[chatId] = [];\nlet panier = sd.paniers[chatId];\nif (action === 'addToCart') {\n  const idx = panier.findIndex(i => i.prodId == input.prodId);\n  if (idx >= 0) panier[idx].qty++;\n  else panier.push({ prodId: input.prodId, nom: input.productName, prix: Number(input.price), vendorId: input.vendorId, catId: input.catId, qty: 1 });\n  sd.paniers[chatId] = panier;\n  return [{ json: { chatId, type: 'buttons', text: `✅ *${input.productName}* ajouté au panier !`, buttons: [\n    { id: 'VIEW_CART', title: `🛍️ Panier (${panier.length})` },\n    { id: `BACK_CAT|${input.catId}|0|${input.vendorId}`, title: '🔙 Continuer' },\n    { id: 'HOME', title: '🏠 Accueil' }\n  ], _isCartDisplay: true } }];\n}\nif (action === 'removeFromCart') {\n  panier = panier.filter(i => i.prodId != input.prodId);\n  sd.paniers[chatId] = panier;\n  return [{ json: { chatId, type: 'buttons', text: '🗑️ Article retiré.', buttons: [\n    { id: 'VIEW_CART', title: `🛍️ Panier (${panier.length})` },\n    { id: 'HOME', title: '🏠 Accueil' }\n  ], _isCartDisplay: true } }];\n}\nif (action === 'orderCart') {\n  if (!panier.length) {\n    return [{ json: { chatId, type: 'buttons', text: '🛒 Panier vide.', buttons: [{ id: 'HOME', title: '🏠 Accueil' }], _isCartDisplay: true } }];\n  }\n  let total = 0;\n  let desc = '';\n  const vendorId = panier[0].vendorId;\n  panier.forEach(item => {\n    const sous = item.prix * item.qty;\n    total += sous;\n    desc += `• ${item.nom} x${item.qty} = ${sous.toFixed(2)}$ `;\n  });\n  const safeProductName = `COMMANDE PANIER: ${desc.trim()} | Total : ${total.toFixed(2)}$`;\n  sd.paniers[chatId] = [];\n  const sdGlobal = $getWorkflowStaticData('global');\n  if (!sdGlobal.sessions) sdGlobal.sessions = {};\n  if (!sdGlobal.sessions[chatId]) sdGlobal.sessions[chatId] = {};\n  sdGlobal.sessions[chatId].enCommande = true;\n  return [{ json: {\n    chatId,\n    userMessage: safeProductName,\n    userName: input.userName || 'Client',\n    sessionId: input.sessionId,\n    orderRef: input.orderRef,\n    routeTo: 'agent',\n    vendorId,\n    prodId: '',\n    price: total.toFixed(2),\n    productName: safeProductName,\n    _isCartDisplay: false\n  } }];\n}\n// viewCart\nif (!panier.length) {\n  return [{ json: { chatId, type: 'buttons', text: '🛒 Votre panier est vide.', buttons: [{ id: 'HOME', title: '🏠 Accueil' }], _isCartDisplay: true } }];\n}\nlet total = 0;\nlet textMsg = '🛒 *Votre panier :*\\n\\n';\nconst btns = [];\npanier.forEach((item, idx) => {\n  const sous = item.prix * item.qty;\n  total += sous;\n  textMsg += `${idx+1}. ${item.nom}\\n   ${item.qty} × ${item.prix}$ = ${sous.toFixed(2)}$\\n\\n`;\n  if (btns.length < 2) btns.push({ id: `REMOVE_CART|${item.prodId}`, title: `🗑️ ${item.nom.substring(0, 15)}` });\n});\ntextMsg += `──────────────\\n💰 *Total : ${total.toFixed(2)}$*`;\nbtns.push({ id: 'ORDER_CART', title: '✅ Commander' });\nreturn [{ json: { chatId, type: 'buttons', text: textMsg, buttons: btns, _isCartDisplay: true } }];"
       },
-      "id": "ec8795d8-1e50-4e62-8dad-a91158b034fe",
+      "id": "d16ff961-dc8e-4bb5-b6d2-e6bfee971547",
       "name": "Gestion panier",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5856,
-        8704
+        -4880,
+        7520
       ]
     },
     {
@@ -454,13 +454,13 @@
         },
         "options": {}
       },
-      "id": "7cec1b66-d453-418f-a546-8488edfeac4d",
+      "id": "d7039ff9-71df-42e5-95c7-c5d814042ef4",
       "name": "Switch panier",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.1,
       "position": [
-        -5552,
-        8800
+        -4576,
+        7616
       ]
     },
     {
@@ -468,16 +468,16 @@
         "promptType": "define",
         "text": "=Client: {{ $json.userName }}\nMessage: {{ $json.userMessage }}\nchatId: {{ $json.chatId }}\norderRef: {{ $json.orderRef }}\nvendorId: {{ $json.vendorId }}\nprodId: {{ $json.prodId }}\nprice: {{ $json.price }}\nproductName: {{ $json.productName }}\nrouteTo: {{ $json.routeTo }}",
         "options": {
-          "systemMessage": "Tu es l'assistant de la marketplace **Ecom SAS Marketplace**. Tu aides les clients à passer des commandes et à trouver des produits.\n\n**IDENTITÉ** : Tu t'appelles \"Assistant Ecom SAS\". Ne mentionne jamais \"MH Beauty\" — tu représentes Ecom SAS Marketplace.\n\n**RÈGLE ABSOLUE** : Interroge TOUJOURS la base de données via l'outil SQL. Ne devine jamais les données (prix, IDs, noms de boutiques).\n\n---\n\n**PROCESSUS DE COMMANDE EN 7 ÉTAPES** :\n\nSi `productName` ou `orderRef` est présent, ou si le client exprime l'intention de commander (\"je veux commander\", \"commander\", \"je prends\", etc.) :\n\n1. **ÉTAPE 1 – Identifier le produit** : Si `prodId` est fourni, utilise-le directement. Sinon, recherche le produit mentionné par le client via SQL :\n   `SELECT p.id, p.nom, p.prix, c.vendeur_id FROM produits_vendeur p JOIN categories_vendeur c ON c.id = p.categorie_id WHERE p.nom LIKE '%NOM_PRODUIT%' LIMIT 5`\n   Demande confirmation si plusieurs résultats.\n\n2. **ÉTAPE 2 – Récapitulatif** : Envoie le récap de la commande (produit, prix, boutique si connue). Exemple :\n   \"🛍️ Récapitulatif de votre commande :\\n- Produit : Bague tet\\n- Prix : 2.00$\\n\\nPour finaliser, j'ai besoin de quelques informations.\"\n\n3. **ÉTAPE 3 – Collecte des infos client** : Demande (si non fournis) :\n   - Nom complet\n   - Numéro de téléphone de livraison\n   - Adresse de livraison\n\n4. **ÉTAPE 4 – Confirmation** : Récapitule les infos client et demande confirmation finale.\n\n5. **ÉTAPE 5 – Récupérer credentials vendeur** : Requête SQL pour obtenir les credentials Easypay du vendeur :\n   `SELECT cideasypay, tokeneasypay FROM vendeurs WHERE id = VENDOR_ID LIMIT 1`\n   (utilise `vendorId` du contexte, ou le `vendeur_id` trouvé à l'étape 1)\n\n6. **ÉTAPE 6 – Initier le paiement** : Appelle l'outil **Paiement Easypay** avec :\n   - cideasypay, tokeneasypay (step 5)\n   - montant = prix du produit\n   - client_nom, client_phone (step 3)\n   - produit_nom = nom du produit\n   - order_ref = orderRef du contexte\n\n7. **ÉTAPE 7 – Confirmer et enregistrer** : Si le paiement réussit :\n   - Insère la commande en base : `INSERT INTO commandes (order_ref, produit_id, vendeur_id, client_nom, client_phone, montant, statut) VALUES ('REF', ID, VID, 'NOM', 'TEL', MONTANT, 'en_attente')`\n   - Envoie le message de confirmation avec le lien de paiement reçu.\n\n---\n\n**Requêtes SQL utiles** :\n\n- Toutes les boutiques : `SELECT id, nom_boutique FROM vendeurs WHERE statut IN ('approuvé','approuve') ORDER BY nom_boutique`\n- Catégories d'une boutique : `SELECT c.id, c.nom FROM categories_vendeur c JOIN vendeurs v ON v.id = c.vendeur_id WHERE v.nom_boutique = 'NOM' ORDER BY c.nom`\n- Produits d'une boutique : `SELECT p.id, p.nom, p.prix, c.nom AS categorie FROM produits_vendeur p JOIN categories_vendeur c ON c.id = p.categorie_id JOIN vendeurs v ON v.id = c.vendeur_id WHERE v.nom_boutique = 'NOM' ORDER BY c.nom, p.nom`\n- Recherche produit : `SELECT id, nom, prix FROM produits_vendeur WHERE nom LIKE '%MOT%' LIMIT 10`\n- Credentials vendeur : `SELECT cideasypay, tokeneasypay FROM vendeurs WHERE id = ID LIMIT 1`\n\n---\n\n**Règles générales** :\n- Réponds en français, courtois, ≤100 mots, avec émojis\n- Garde le contexte de la conversation (tu as une mémoire de session)\n- Si le client dit \"bonjour\" ou salue, présente-toi et propose les boutiques\n- Ne mentionne jamais de données inventées"
+          "systemMessage": "Tu es l'assistant de la marketplace **Ecom SAS Marketplace**.\n\n**RÈGLE N°1 ABSOLUE** : Tu ne connais AUCUN produit, AUCUNE boutique, AUCUN prix. TOUTE information sur les produits, boutiques ou commandes DOIT venir d'une requête SQL via l'outil SQL. Si tu n'as pas encore exécuté de requête SQL dans cette réponse, EXÉCUTE-EN UNE AVANT DE RÉPONDRE.\n\n**RÈGLE N°2** : Ne dis JAMAIS qu'un produit est indisponible sans avoir d'abord fait une requête SQL qui confirme son absence.\n\n---\n\n**FLOW COMMANDE — à suivre dès que le client mentionne un produit ou veut commander :**\n\n**ÉTAPE 1 — Chercher le produit en DB (OBLIGATOIRE en premier)**\nExtrais le nom du produit depuis le message du client et exécute IMMÉDIATEMENT :\n\nRemplace MOT_CLE par le mot principal du produit (ex: \"bague\", \"chaussure\", \"parfum\").\nSi plusieurs résultats, demande confirmation au client.\n\n**ÉTAPE 2 — Récapitulatif**\nAffiche : produit trouvé, prix, et demande confirmation de commande.\n\n**ÉTAPE 3 — Collecte infos client**\nDemande : nom complet, numéro de téléphone, adresse de livraison.\n\n**ÉTAPE 4 — Confirmation finale**\nRécapitule tout et demande \"Confirmez-vous la commande ? (Oui/Non)\"\n\n**ÉTAPE 5 — Credentials vendeur**\n\n\n**ÉTAPE 6 — Paiement**\nAppelle l'outil Paiement Easypay avec : cideasypay, tokeneasypay, montant, client_nom, client_phone, produit_nom, order_ref.\n\n**ÉTAPE 7 — Enregistrement**\n\nEnvoie le lien de paiement au client.\n\n---\n\n**Autres requêtes utiles :**\n- Toutes les boutiques : \n- Catégories d'une boutique : \n- Tous les produits d'une boutique : \n\n---\n\n**Contexte de l'exécution (injecté automatiquement) :**\n- chatId : identifiant WhatsApp du client\n- orderRef : référence de commande pré-générée\n- vendorId : ID vendeur si connu\n- prodId : ID produit si connu (utilise-le directement si présent)\n- price : prix si connu\n- productName : nom produit si connu\n\nSi prodId est fourni et non vide, utilise-le directement sans chercher.\n\n---\n\n**Style** : Réponds en français, courtois, ≤120 mots, avec émojis. Identité : \"Assistant Ecom SAS\". Ne mentionne jamais \"MH Beauty\"."
         }
       },
-      "id": "96c38f60-8da6-493b-b8e3-390c4b89664c",
+      "id": "49c8e7fe-96b7-427b-b0ce-37a15ec05253",
       "name": "Agent IA",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        -5568,
-        9200
+        -4592,
+        8016
       ]
     },
     {
@@ -487,13 +487,13 @@
           "temperature": 0.3
         }
       },
-      "id": "2db694e1-4aa9-4e98-8dd7-bcf0b25c113f",
+      "id": "dadc3ed5-14f7-4f65-8467-e19d6e58413d",
       "name": "GPT-4o-mini",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.1,
       "position": [
-        -5808,
-        9536
+        -4832,
+        8352
       ],
       "credentials": {
         "openAiApi": {
@@ -508,28 +508,28 @@
         "sessionKey": "={{ $('Normaliser message').item.json.sessionId }}",
         "contextWindowLength": 20
       },
-      "id": "49d8c31e-6b00-43eb-8d56-2080e1d4dce0",
+      "id": "cd9d921a-045b-4bfa-8674-d1581c9cd1d3",
       "name": "Memoire session",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        -5584,
-        9536
+        -4608,
+        8352
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "{{ $fromAI('query') }}",
+        "query": "={{ $fromAI('query') }}",
         "options": {}
       },
-      "id": "d7c8ae26-107d-4d2c-a126-b3c13c28b2f3",
+      "id": "82684a0f-49c3-46ad-858b-0bae0e641cce",
       "name": "SQL Tool",
       "type": "n8n-nodes-base.mySqlTool",
       "typeVersion": 2.5,
       "position": [
-        -5376,
-        9520
+        -4400,
+        8336
       ],
       "credentials": {
         "mySql": {
@@ -578,45 +578,54 @@
         },
         "options": {}
       },
-      "id": "47a68eb5-2086-486b-905d-5409ae40a773",
+      "id": "17c04b08-ab4f-4c4b-9fbc-7e5bf2fe7135",
       "name": "Paiement Easypay",
       "type": "n8n-nodes-base.httpRequestTool",
       "typeVersion": 4.2,
       "position": [
-        -5152,
-        9504
+        -4176,
+        8320
       ]
     },
     {
       "parameters": {
         "jsCode": "// Parse la réponse de l'Agent IA\nconst agentOutput = $input.first().json;\nconst response = agentOutput.output || '';\nlet chatId = agentOutput.chatId;\nif (!chatId) {\n  try { chatId = $('Router navigation').first().json.chatId; } catch(e) {}\n}\nif (!chatId) {\n  try { chatId = $('Normaliser message').first().json.chatId; } catch(e) {}\n}\n// Réinitialiser enCommande si la commande est confirmée\nconst sd = $getWorkflowStaticData('global');\nif (sd.sessions && sd.sessions[chatId]) {\n  if (/CMD-|commande\\s*(n°|numero|numéro|#)|confirmée|confirmé|paiement/i.test(response)) {\n    sd.sessions[chatId].enCommande = false;\n  }\n}\n// Construire les boutons de retour\nconst buttons = [\n  { id: 'HOME', title: '🏠 Accueil' }\n];\n// Si c'est une demande d'infos (étape 3 du flow commande), garder simple\nconst isAskingInfo = /nom|téléphone|adresse|livraison/i.test(response);\nconst text = response || 'Je n\\'ai pas compris. Tapez HOME pour revenir à l\\'accueil.';\nreturn [{ json: {\n  chatId,\n  type: 'buttons',\n  text: text,\n  buttons: isAskingInfo ? [] : buttons\n} }];"
       },
-      "id": "e9d9fba5-12a9-4b65-9ca4-c80e23761c3d",
+      "id": "f2eada29-120c-4b4f-81aa-929f6c83fde3",
       "name": "Parse agent",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5216,
-        8768
+        -4240,
+        7584
       ]
     },
     {
       "parameters": {
         "jsCode": "// Adaptateur pour l'API WhatsApp v22.0\nconst input = $input.first().json;\nlet chatId = input.chatId;\nif (!chatId) {\n  try { chatId = $('Router navigation').first().json.chatId; } catch(e) {}\n}\nif (!chatId) return [];\nconst to = String(chatId).replace(/^\\+/, '');\nconst type = input.type;\nconst text = input.text || '';\nconst buttons = (input.buttons || []).filter(b => b.id && (b.title || b.text));\nconst sections = input.sections || [];\nconst buttonText = input.buttonText || 'Choisir';\nconst image = input.image || null;\nlet payload = { messaging_product: 'whatsapp', to: to, type: 'text' };\nif (type === 'list' && sections.length > 0) {\n  payload.type = 'interactive';\n  payload.interactive = {\n    type: 'list',\n    body: { text: text || '.' },\n    action: { button: buttonText.substring(0, 20), sections: sections }\n  };\n} else if (type === 'image' && image) {\n  // Envoyer l'image d'abord (sans boutons), les boutons en message séparé\n  payload.type = 'image';\n  payload.image = image;\n} else if (buttons.length > 0) {\n  const validBtns = buttons.slice(0, 3).map(b => ({\n    type: 'reply',\n    reply: {\n      id: String(b.id).substring(0, 256),\n      title: String(b.title || b.text || '').substring(0, 20)\n    }\n  }));\n  payload.type = 'interactive';\n  payload.interactive = {\n    type: 'button',\n    body: { text: (text || '.').substring(0, 1024) },\n    action: { buttons: validBtns }\n  };\n} else {\n  payload.type = 'text';\n  payload.text = { body: (text || '.').substring(0, 4096), preview_url: false };\n}\nreturn [{ json: payload }];"
       },
-      "id": "76d0f2f7-93f7-4900-9536-64b9d7c1835f",
+      "id": "9834e6a7-7584-4d6f-8c58-9fb844c62af1",
       "name": "Adapter WhatsApp v24",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4912,
-        8320
+        -3936,
+        7136
       ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "=https://graph.facebook.com/v24.0/975966998935081/messages",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {}
+          }
+        },
+        "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
@@ -625,26 +634,18 @@
             },
             {
               "name": "Authorization",
-              "value": "=Bearer EAAZBznZA8hDnABRgyKwRtgzgZB3brCdnF9QrZAZASbBx7kdFsMZBxTn2bS2pnE42gG81jBZBSWmQGxvMoZAqmE6WOIEOHeR5nlSojqR8tAIxNJxnMYa7EhsUmMNX9QouoMDaQ7u6lDc4vI0bvXObI2mblITf2fTZChiTAa0pm2xHNo9X6AEkowhYjwJ5HOGYJbgZDZD"
+              "value": "Bearer EAAZBznZA8hDnABRgyKwRtgzgZB3brCdnF9QrZAZASbBx7kdFsMZBxTn2bS2pnE42gG81jBZBSWmQGxvMoZAqmE6WOIEOHeR5nlSojqR8tAIxNJxnMYa7EhsUmMNX9QouoMDaQ7u6lDc4vI0bvXObI2mblITf2fTZChiTAa0pm2xHNo9X6AEkowhYjwJ5HOGYJbgZDZD"
             }
           ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ $json }}",
-        "options": {
-          "response": {
-            "response": {}
-          }
         }
       },
-      "id": "565c62da-1c0e-48cf-adf5-68189b5a519c",
+      "id": "a0008b52-fb12-4251-b8fe-4b2ae7765027",
       "name": "Send WhatsApp v24",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4656,
-        8320
+        -3680,
+        7136
       ]
     }
   ],

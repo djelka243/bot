@@ -1,680 +1,955 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Gestionnaire Etablissement</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-:root {
-  --bg: var(--tg-theme-bg-color, #0b0b0e);
-  --bg2: var(--tg-theme-secondary-bg-color, #13131a);
-  --accent: #6C63FF;
-  --accent-gradient: linear-gradient(135deg, #6C63FF, #8b5cf6);
-  --accent2: #a78bfa;
-  --text: var(--tg-theme-text-color, #f3f4f6);
-  --sub: var(--tg-theme-hint-color, #9ca3af);
-  --border: rgba(108, 99, 255, 0.15);
-  --card: rgba(255, 255, 255, 0.03);
-  --input-bg: rgba(255, 255, 255, 0.05);
-  --success: #10b981;
-  --danger: #ef4444;
-  --warning: #f59e0b;
-  --radius: 18px;
-  --radius-sm: 12px;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 15px; }
-
-.screen { position: fixed; inset: 0; display: flex; flex-direction: column; transition: all 0.3s ease; overflow: hidden; }
-.screen.hidden { opacity: 0; pointer-events: none; transform: translateY(15px); }
-.scroll { flex: 1; overflow-y: auto; padding: 16px 16px 32px; -webkit-overflow-scrolling: touch; }
-.scroll::-webkit-scrollbar { display: none; }
-
-/* Écran Login */
-#screen-login { background: linear-gradient(160deg, #0b0b0e 0%, #151026 100%); justify-content: center; align-items: center; padding: 24px; }
-.login-box { width: 100%; max-width: 360px; }
-.login-logo { width: 80px; height: 80px; border-radius: 24px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 36px; margin: 0 auto 24px; box-shadow: 0 10px 30px rgba(108,99,255,0.3); }
-.login-title { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 6px; letter-spacing: -0.5px; }
-.login-sub { font-size: 14px; color: var(--sub); text-align: center; margin-bottom: 32px; }
-
-.tab-switcher { display: flex; background: var(--input-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 20px; }
-.tab-sw-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; background: none; color: var(--sub); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.tab-sw-btn.active { background: var(--accent-gradient); color: #fff; box-shadow: 0 4px 15px rgba(108,99,255,0.25); }
-.form-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; backdrop-filter: blur(10px); }
-.form-section { display: none; }
-.form-section.active { display: block; }
-
-.field { margin-bottom: 16px; }
-.field label { display: block; font-size: 11px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
-.field input, .field textarea, .field select { width: 100%; padding: 12px 14px; background: var(--input-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 15px; outline: none; transition: all 0.2s; }
-.field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); background: rgba(108,99,255,0.05); box-shadow: 0 0 0 3px rgba(108,99,255,0.15); }
-.field textarea { min-height: 80px; resize: none; }
-.field .hint { font-size: 12px; color: var(--sub); margin-top: 6px; opacity: 0.8; }
-
-.btn-primary { width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm); background: var(--accent-gradient); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(108,99,255,0.3); display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
-.btn-primary:active { transform: scale(0.98); opacity: 0.9; }
-
-.topbar { padding: 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); background: var(--bg2); }
-.topbar-avatar { width: 42px; height: 42px; border-radius: 14px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 20px; }
-.topbar-info { flex: 1; min-width: 0; }
-.topbar-name { font-size: 16px; font-weight: 700; }
-.topbar-status { font-size: 12px; margin-top: 2px; }
-.topbar-logout { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: var(--danger); padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-
-.bottom-nav { display: flex; border-top: 1px solid var(--border); background: var(--bg2); padding-bottom: env(safe-area-inset-bottom, 0); }
-.nav-btn { flex: 1; padding: 12px 4px 10px; background: none; border: none; color: var(--sub); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; transition: all 0.2s; }
-.nav-btn span:first-child { font-size: 22px; transition: transform 0.2s; }
-.nav-btn.active { color: var(--accent2); }
-.nav-btn.active span:first-child { transform: scale(1.15); }
-
-.page { display: none; flex-direction: column; flex: 1; overflow: hidden; }
-.page.active { display: flex; }
-.page-header { padding: 8px 0 16px; display: flex; align-items: center; justify-content: space-between; }
-.page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
-.page-sub { font-size: 13px; color: var(--sub); }
-
-.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
-.stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-.stat-card { background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; display: flex; flex-direction: column; gap: 4px; }
-.stat-num { font-size: 28px; font-weight: 800; color: var(--accent2); }
-.stat-lbl { font-size: 12px; color: var(--sub); font-weight: 500; }
-
-.list-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.1s; }
-.list-item:active { background: rgba(255,255,255,0.02); }
-.list-item:last-child { border-bottom: none; }
-.item-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.1); }
-.item-info { flex: 1; min-width: 0; }
-.item-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
-.item-meta { font-size: 12px; color: var(--sub); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-
-.item-actions { display: flex; gap: 8px; z-index: 2; }
-.icon-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid transparent; background: rgba(255,255,255,0.04); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-.icon-btn.edit { color: var(--accent2); border-color: rgba(108,99,255,0.2); }
-.icon-btn.edit:active { background: rgba(108,99,255,0.15); }
-.icon-btn.del { color: var(--danger); border-color: rgba(239,68,68,0.2); }
-.icon-btn.del:active { background: rgba(239,68,68,0.15); }
-
-.profile-hero { background: linear-gradient(135deg, rgba(108,99,255,0.1) 0%, rgba(139,92,246,0.03) 100%); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center; margin-bottom: 16px; }
-.profile-avatar { width: 70px; height: 70px; border-radius: 22px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 14px; box-shadow: 0 8px 25px rgba(108,99,255,0.2); }
-.profile-name { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
-.profile-desc { font-size: 14px; color: var(--sub); line-height: 1.4; }
-
-.badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 10px; }
-.badge.pending { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.2); }
-.badge.approved { background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.2); }
-.badge.rejected { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
-
-.info-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
-.info-cell { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
-.info-cell .lbl { font-size: 11px; color: var(--sub); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-.info-cell .val { font-size: 15px; font-weight: 600; }
-
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; backdrop-filter: blur(5px); }
-.modal-overlay.open { opacity: 1; pointer-events: all; }
-.modal { background: #121218; border-top: 1px solid var(--border); border-radius: 24px 24px 0 0; width: 100%; padding: 20px 20px 32px; max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); }
-.modal-overlay.open .modal { transform: translateY(0); }
-.modal-handle { width: 40px; height: 5px; background: rgba(255,255,255,0.15); border-radius: 3px; margin: 0 auto 20px; }
-.modal-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-
-.btn-danger { width: 100%; padding: 14px; border: 1px solid rgba(239,68,68,0.3); border-radius: var(--radius-sm); background: rgba(239,68,68,0.08); color: var(--danger); font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 10px; transition: all 0.2s; }
-.btn-danger:active { background: rgba(239,68,68,0.15); }
-.btn-cancel { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: transparent; color: var(--sub); font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
-
-.fab { position: sticky; bottom: 0; display: flex; justify-content: flex-end; padding-top: 10px; pointer-events: none; }
-.fab-btn { pointer-events: auto; background: var(--accent-gradient); color: #fff; border: none; border-radius: 14px; padding: 12px 20px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(108,99,255,0.4); transition: transform 0.2s; }
-.fab-btn:active { transform: scale(0.95); }
-
-.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px; text-align: center; color: var(--sub); }
-.empty-icon { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
-.empty-text { font-size: 14px; }
-
-.toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%) translateY(10px); background: #1c1c24; border: 1px solid var(--border); color: var(--text); padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600; z-index: 999; pointer-events: none; opacity: 0; transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1); box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-.loader-overlay { position: fixed; inset: 0; background: rgba(11,11,14,0.85); display: flex; align-items: center; justify-content: center; z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s; backdrop-filter: blur(3px); }
-.loader-overlay.show { opacity: 1; pointer-events: all; }
-.spinner { width: 42px; height: 42px; border: 3px solid rgba(108,99,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>
-</head>
-<body>
-
-<!-- ÉCRAN CONNEXION / INSCRIPTION -->
-<div class="screen" id="screen-login">
-  <div class="login-box">
-    <div class="login-logo"><img src="./logo.png" style="height: 64px; width: 64px" alt="logo"></div>
-    <div class="login-title">Bot Vendeur</div>
-    <div class="login-sub">Gérez votre catalogue en direct sur Telegram</div>
-    <div class="tab-switcher">
-      <button class="tab-sw-btn active" id="btn-tab-login" onclick="switchAuthTab('login')">Connexion</button>
-      <button class="tab-sw-btn" id="btn-tab-register" onclick="switchAuthTab('register')">Créer un compte</button>
-    </div>
-    <div class="form-card">
-      <div class="form-section active" id="fs-login">
-        <div class="field">
-          <label>Mot de passe de la Etablissement</label>
-          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
-        </div>
-        <button class="btn-primary" onclick="seConnecter()">🔑 Me connecter</button>
-      </div>
-      <div class="form-section" id="fs-register">
-        <div class="field"><label>Nom de la Etablissement *</label><input type="text" id="reg-nom" placeholder="Ex: Mon Shop Magique"></div>
-        <div class="field"><label>Description</label><textarea id="reg-desc" placeholder="Ce que vous vendez..."></textarea></div>
-        <div class="field"><label>Téléphone *</label><input type="tel" id="reg-tel" placeholder="Ex: 0977196639"></div>
-        <div class="field"><label>Adresse *</label><input type="text" id="reg-adr" placeholder="Ex: Gombe, Ville"></div>
-        <div class="field"><label>Mot de passe *</label><input type="password" id="reg-password" placeholder="Min. 4 caractères"></div>
-        <button class="btn-primary" onclick="sInscrire()">🚀 Créer</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ÉCRAN PRINCIPAL D'ADMINISTRATION -->
-<div class="screen hidden" id="screen-main">
-  <div class="topbar">
-    <div class="topbar-avatar">🏪</div>
-    <div class="topbar-info">
-      <div class="topbar-name" id="topbar-shop">Chargement...</div>
-      <div class="topbar-status" id="topbar-status">Vérification...</div>
-    </div>
-    <button class="topbar-logout" onclick="seDeconnecter()">Quitter</button>
-  </div>
-
-  <div style="flex:1; overflow:hidden; display:flex; flex-direction:column">
-    <!-- PAGE 1 : PROFIL & STATS -->
-    <div class="page active" id="page-profil">
-      <div class="scroll">
-        <div class="page-header">
-          <div><div class="page-title">Tableau de bord</div><div class="page-sub">Vue d'ensemble de votre activité</div></div>
-        </div>
-        <div id="profil-content"></div>
-      </div>
-    </div>
-
-    <!-- PAGE 2 : GESTION DES CATÉGORIES -->
-    <div class="page" id="page-categories">
-      <div class="scroll">
-        <div class="page-header">
-          <div><div class="page-title">Catégories</div><div class="page-sub" id="cat-count">0 catégorie</div></div>
-        </div>
-        <div class="card" id="liste-categories-wrap">
-          <div id="liste-categories"></div>
-        </div>
-        <div class="fab"><button class="fab-btn" onclick="openAddCategory()"><span>➕</span> Nouvelle catégorie</button></div>
-      </div>
-    </div>
-
-    <!-- PAGE 3 : GESTION DES PRODUITS -->
-    <div class="page" id="page-produits">
-      <div class="scroll">
-        <div class="page-header">
-          <div><div class="page-title">Produits</div><div class="page-sub" id="prod-count">0 produit</div></div>
-        </div>
-        <div class="card" id="liste-produits-wrap">
-          <div id="liste-produits"></div>
-        </div>
-        <div class="fab"><button class="fab-btn" onclick="openAddProduct()"><span>➕</span> Nouveau produit</button></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MENU DE NAVIGATION BAS -->
-  <div class="bottom-nav">
-    <button class="nav-btn active" id="nav-profil" onclick="showPage('profil')"><span>👤</span><span>Profil</span></button>
-    <button class="nav-btn" id="nav-categories" onclick="showPage('categories')"><span>🗂️</span><span>Catégories</span></button>
-    <button class="nav-btn" id="nav-produits" onclick="showPage('produits')"><span>📦</span><span>Produits</span></button>
-  </div>
-</div>
-
-<!-- MODALE UNIQUE POUR CRUD ET DÉTAILS -->
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modal-title">Action</div>
-    <div id="modal-body"></div>
-    <button class="btn-primary" id="modal-ok" style="display: none;">Enregistrer</button>
-    <button class="btn-cancel" onclick="closeModal()">Fermer</button>
-  </div>
-</div>
-
-<div class="loader-overlay" id="loader"><div class="spinner"></div></div>
-<div class="toast" id="toast"></div>
-
-<script>
-const N8N_WEBHOOK = 'https://auto.jessydjonga.site/webhook/tma-vendeur';
-const tg = window.Telegram?.WebApp;
-if (tg) { tg.ready(); tg.expand(); }
-
-const chatId = tg?.initDataUnsafe?.user?.id?.toString() || 'test_123456';
-
-let profile = null;
-let categories = [];   // tableau d'objets { nom }
-let produits = [];     // tableau d'objets { nom, prix, description, taille } (pas d'id)
-
-// --- Utilitaires ---
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 2500);
-}
-
-function loader(show) {
-  document.getElementById('loader').classList.toggle('show', show);
-}
-
-function escHtml(s) {
-  return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// Normalise une réponse pour extraire un tableau (gère les formats courants de n8n)
-function normalizeArray(data) {
-  if (Array.isArray(data)) return data;
-  if (data && typeof data === 'object') {
-    // Propriétés possibles : data, rows, results, categories, products, etc.
-    if (Array.isArray(data.data)) return data.data;
-    if (Array.isArray(data.rows)) return data.rows;
-    if (Array.isArray(data.results)) return data.results;
-    if (Array.isArray(data.categories)) return data.categories;
-    if (Array.isArray(data.products)) return data.products;
-    // Sinon, essayer la première valeur qui est un tableau
-    for (let key in data) {
-      if (Array.isArray(data[key])) return data[key];
+{
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "id": "1cca1c62-363e-4e0e-acc7-5a30af0a8cd4",
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2112,
+        3008
+      ],
+      "webhookId": "71b42a57-68aa-4fcb-8359-30115b4bb1c7",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "lyrake9YtGPIxvUo",
+          "name": "Ecom Market place"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalise le message entrant (texte ou interaction)\nconst msg = $input.first().json;\n\n// Le node WhatsApp Trigger renvoie un format déjà aplati :\n// { messaging_product, metadata, contacts, messages: [...], field }\n// On gère aussi l'ancien format brut (entry[].changes[].value) par sécurité.\nconst value = msg.entry?.[0]?.changes?.[0]?.value || msg;\nconst waMsg = value.messages?.[0] || {};\nconst from = waMsg.from;\n\n// Ignore les webhooks sans message exploitable (statuts, accusés de lecture, etc.)\nif (!from) {\n  return [];\n}\n\nlet text = waMsg.text?.body || '';\nconst interactiveId = waMsg.interactive?.button_reply?.id || waMsg.interactive?.list_reply?.id || '';\nconst userMessage = text || interactiveId;\nconst sessionId = 'whatsapp_' + from;\nconst orderRef = 'CMD-' + from + '-' + Date.now();\nreturn [{\n  json: {\n    chatId: from,\n    userMessage,\n    userName: 'Client',\n    sessionId,\n    orderRef,\n    isCallback: !!interactiveId\n  }\n}];"
+      },
+      "id": "bed6f67c-8e19-4dd2-aa4d-4b95aa3ad667",
+      "name": "Normaliser message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1808,
+        3008
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analyse la commande utilisateur et route\nconst input = $input.first().json;\nconst msg = input.userMessage ? input.userMessage.trim() : '';\nconst msgLower = msg.toLowerCase();\nconst chatId = input.chatId;\nlet routeTo = 'agent';\nlet vendorId = '', catId = '', prodId = '', price = '', productName = '';\nlet offset = 0;\n\n// Session globale : suit si le client est en pleine conversation de commande avec l'agent\nconst sd = $getWorkflowStaticData('global');\nif (!sd.sessions) sd.sessions = {};\nif (!sd.sessions[chatId]) sd.sessions[chatId] = { enCommande: false };\n\n// Liste des salutations courantes pour rediriger vers le message chaleureux de l'IA\nconst salutations = ['bjr', 'bonjour', 'slt', 'salut', 'cc', 'hello', 'hey', 'bonsoir'];\nconst estUneSalutation = salutations.some(s => msgLower.startsWith(s));\n\nif (msg.startsWith('VENDOR|')) { vendorId = msg.split('|')[1]; routeTo = 'categories'; }\nelse if (msg.startsWith('CAT|')) { const parts = msg.split('|'); catId = parts[1]; vendorId = parts[2]; routeTo = 'products'; }\nelse if (msg.startsWith('PROD|')) { const parts = msg.split('|'); prodId = parts[1]; catId = parts[2]; vendorId = parts[3]; price = parts[4]; routeTo = 'productDetail'; }\nelse if (msg.startsWith('PAGE|')) { const parts = msg.split('|'); catId = parts[1]; offset = parseInt(parts[2]); vendorId = parts[3]; routeTo = 'products'; }\nelse if (msg.startsWith('BACK_CAT|')) { const parts = msg.split('|'); catId = parts[1]; offset = parseInt(parts[2]); vendorId = parts[3]; routeTo = 'products'; }\nelse if (msg.startsWith('ADD_CART|')) { const parts = msg.split('|'); prodId = parts[1]; price = parts[2]; catId = parts[3]; vendorId = parts[4]; productName = parts.slice(5).join('|'); routeTo = 'addToCart'; }\nelse if (msg === 'VIEW_CART') routeTo = 'viewCart';\nelse if (msg.startsWith('REMOVE_CART|')) { prodId = msg.split('|')[1]; routeTo = 'removeFromCart'; }\nelse if (msg === 'ORDER_CART') { routeTo = 'orderCart'; }\nelse if (msg.startsWith('ORDER|')) { const parts = msg.split('|'); prodId = parts[1]; price = parts[2]; catId = parts[3]; vendorId = parts[4]; productName = parts.slice(5).join('|'); routeTo = 'agent'; }\nelse if (msg === 'HOME' || msg === '/start') { routeTo = 'vendors'; sd.sessions[chatId].enCommande = false; }\nelse {\n  // Texte libre (pas de bouton technique cliqué)\n  // Si l'utilisateur dit \"bjr\", pose une question ou continue son processus d'achat textuel\n  if (estUneSalutation || sd.sessions[chatId].enCommande || !input.isCallback) {\n    routeTo = 'agent';\n  } else {\n    routeTo = 'vendors';\n  }\n}\n\n// Activer le mode commande si l'action implique l'Agent IA pour l'achat\nif (routeTo === 'orderCart' || msg.startsWith('ORDER|')) {\n  sd.sessions[chatId].enCommande = true;\n}\n\nreturn [{ json: { ...input, routeTo, vendorId, catId, offset, prodId, price, productName } }];"
+      },
+      "id": "c17bd5be-56db-47cb-8a39-78c5872eab40",
+      "name": "Router navigation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1520,
+        3008
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "vendors",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "categories",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "products",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "productDetail",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "addToCart",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "viewCart",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "removeFromCart",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "orderCart",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "40845fef-cad2-4bc6-b24c-da437c901f9f",
+      "name": "Switch route",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [
+        -1216,
+        3008
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, nom_boutique FROM vendeurs WHERE statut IN ('approuvé','approuve') ORDER BY nom_boutique",
+        "options": {}
+      },
+      "id": "a2ffe557-10ea-4255-a5a3-b7572fd96462",
+      "name": "SQL Vendeurs",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -912,
+        2800
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT id, nom FROM categories_vendeur WHERE vendeur_id = ' + ($json.vendorId || 0) + ' ORDER BY nom' }}",
+        "options": {}
+      },
+      "id": "33b92e1a-3220-41e4-b08f-db543048ff4a",
+      "name": "SQL Categories",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -912,
+        2960
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT id, nom, prix, COUNT(*) OVER() AS _total FROM produits_vendeur WHERE categorie_id = ' + ($json.catId || 0) + ' ORDER BY id LIMIT 5 OFFSET ' + ($json.offset || 0) }}",
+        "options": {}
+      },
+      "id": "94f0e14d-55cd-46bf-986c-ae28934ba546",
+      "name": "SQL Produits",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -912,
+        3104
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ 'SELECT p.id, p.nom, p.description, p.prix, p.taille, p.categorie_id, pi.url_image AS photo_url FROM produits_vendeur p LEFT JOIN produit_image pi ON pi.produit_id = p.id WHERE p.id = ' + ($json.prodId || 0) + ' LIMIT 1' }}",
+        "options": {}
+      },
+      "id": "3b750cff-30d5-4d03-b450-75d2d7e5c54b",
+      "name": "SQL Detail produit",
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -912,
+        3264
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construit la réponse pour les vendeurs (liste interactive)\nconst rows = $input.all().map(i => i.json).filter(v => v.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Aucune boutique disponible.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\nconst sections = [{\n  title: 'Boutiques',\n  rows: rows.slice(0,10).map(v => ({ id: 'VENDOR|' + v.id, title: v.nom_boutique.substring(0,20), description: '' }))\n}];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Choisissez une boutique :', sections, buttonText: 'Voir les boutiques' } }];"
+      },
+      "id": "9c3fc936-ef76-411f-af2e-4b8ae6939c89",
+      "name": "Handle vendeurs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        2816
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construit la réponse pour les catégories\nconst rows = $input.all().map(i => i.json).filter(c => c.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Aucune catégorie.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\nconst sections = [{\n  title: 'Catégories',\n  rows: rows.slice(0,10).map(c => ({ id: 'CAT|' + c.id + '|' + nav.vendorId, title: c.nom.substring(0,20), description: '' }))\n}];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Choisissez une catégorie :', sections, buttonText: 'Voir catégories' } }];"
+      },
+      "id": "a5b8fd4b-5ba1-4304-b7e0-96819453c57b",
+      "name": "Handle categories",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        2976
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Construit la réponse pour les produits\nconst rows = $input.all().map(i => i.json).filter(p => p.id);\nconst nav = $('Router navigation').first().json;\nif (!rows.length) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Aucun produit.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\n// WhatsApp : row.title <= 24 caractères, row.description <= 72 caractères\nconst productRows = rows.slice(0,10).map(p => {\n  const fullTitle = p.nom + ' — ' + p.prix + '$';\n  const title = fullTitle.length > 24 ? p.nom.substring(0, 24 - (' — ' + p.prix + '$').length) + ' — ' + p.prix + '$' : fullTitle;\n  return {\n    id: 'PROD|' + p.id + '|' + nav.catId + '|' + nav.vendorId + '|' + p.prix,\n    title: title.substring(0, 24),\n    description: p.nom.substring(0, 72)\n  };\n});\nconst sections = [{ title: 'Produits', rows: productRows }];\nreturn [{ json: { chatId: nav.chatId, type: 'list', text: 'Produits :', sections, buttonText: 'Voir produits' } }];"
+      },
+      "id": "e7b8f3ec-1a8d-4913-bf01-40d4d7d16403",
+      "name": "Handle produits",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        3120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Détail produit : image + boutons (ou simple texte si pas d'image)\nconst BASE_URL = 'https://mhbeauty.shop/storage/';\nconst nav = $('Router navigation').first().json;\nconst p = $input.first().json;\nif (!p || !p.id) {\n  return [{ json: { chatId: nav.chatId, type: 'text', text: 'Produit introuvable.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n}\nconst rawUrl = (p.photo_url || '').trim();\nconst photoUrl = rawUrl ? (rawUrl.startsWith('http') ? rawUrl : BASE_URL + rawUrl.replace(/^\\//, '')) : '';\nconst caption = `📦 *${p.nom}*\\n\\n${p.description || ''}\\n\\n💰 Prix : ${p.prix}$\\n📏 Taille : ${p.taille || 'N/A'}`;\nconst addCart = `ADD_CART|${p.id}|${p.prix}|${nav.catId}|${nav.vendorId}|${p.nom}`;\nconst backCat = `BACK_CAT|${p.categorie_id}|0|${nav.vendorId}`;\nconst order = `ORDER|${p.id}|${p.prix}|${nav.catId}|${nav.vendorId}|${p.nom}`;\nconst buttons = [\n  { id: addCart, title: '🛒 Ajouter au panier' },\n  { id: backCat, title: '🔙 Continuer' },\n  { id: order, title: '✅ Commander' }\n];\nif (photoUrl) {\n  return [{ json: { chatId: nav.chatId, type: 'image', image: { link: photoUrl, caption: caption }, buttons: buttons } }];\n} else {\n  return [{ json: { chatId: nav.chatId, type: 'buttons', text: caption, buttons: buttons } }];\n}"
+      },
+      "id": "e77edffd-fb42-4b73-b735-843c2c074aaf",
+      "name": "Handle detail produit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        3280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gestion du panier (static data)\nconst input = $input.first().json;\nconst chatId = input.chatId;\nconst action = input.routeTo;\nconst sd = $getWorkflowStaticData('node');\nif (!sd.paniers) sd.paniers = {};\nif (!sd.paniers[chatId]) sd.paniers[chatId] = [];\nlet panier = sd.paniers[chatId];\n\nif (action === 'addToCart') {\n  const idx = panier.findIndex(i => i.prodId == input.prodId);\n  if (idx >= 0) panier[idx].qty++;\n  else panier.push({ prodId: input.prodId, nom: input.productName, prix: Number(input.price), vendorId: input.vendorId, catId: input.catId, qty: 1 });\n  sd.paniers[chatId] = panier;\n  return [{ json: { chatId, type: 'text', text: `✅ *${input.productName}* ajouté au panier !`, buttons: [\n    { text: `🛍️ Voir panier (${panier.length})`, id: 'VIEW_CART' },\n    { text: '🔙 Continuer', id: `BACK_CAT|${input.catId}|0|${input.vendorId}` },\n    { text: '🏠 Accueil', id: 'HOME' }\n  ] } }];\n}\nif (action === 'removeFromCart') {\n  panier = panier.filter(i => i.prodId != input.prodId);\n  sd.paniers[chatId] = panier;\n  return [{ json: { chatId, type: 'text', text: '🗑️ Article retiré.', buttons: [\n    { text: `🛍️ Voir panier (${panier.length})`, id: 'VIEW_CART' },\n    { text: '🏠 Accueil', id: 'HOME' }\n  ] } }];\n}\nif (action === 'orderCart') {\n  if (!panier.length) return [{ json: { chatId, type: 'text', text: '🛒 Panier vide.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\n  let total = 0, desc = '';\n  const vendorId = panier[0].vendorId;\n  panier.forEach(item => { const sous = item.prix * item.qty; total += sous; desc += `• ${item.nom} x${item.qty} = ${sous.toFixed(2)}$ `; });\n  const safeProductName = `COMMANDE PANIER: ${desc.trim()} Total : ${total.toFixed(2)}$`;\n  sd.paniers[chatId] = [];\n  return [{ json: { ...input, routeTo: 'agent', vendorId, prodId: '', price: total.toFixed(2), productName: safeProductName } }];\n}\n// viewCart\nif (!panier.length) return [{ json: { chatId, type: 'text', text: '🛒 Panier vide.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];\nlet total = 0, textMsg = '🛒 *Votre panier :*\\n\\n';\nconst btns = [];\npanier.forEach((item, idx) => {\n  const sous = item.prix * item.qty;\n  total += sous;\n  textMsg += `${idx+1}. ${item.nom}\\n   ${item.qty} × ${item.prix}$ = ${sous.toFixed(2)}$\\n\\n`;\n  btns.push({ text: `🗑️ ${item.nom.substring(0,15)}`, id: `REMOVE_CART|${item.prodId}` });\n});\ntextMsg += `──────────────\\n💰 *Total : ${total.toFixed(2)}$*`;\nbtns.push({ text: '✅ Commander', id: 'ORDER_CART' }, { text: '🏠 Accueil', id: 'HOME' });\nreturn [{ json: { chatId, type: 'text', text: textMsg, buttons: btns } }];"
+      },
+      "id": "ee4f9918-59c8-45ce-82a7-207ff7704239",
+      "name": "Gestion panier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -912,
+        3408
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "orderCart",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTo }}",
+                    "rightValue": "orderCart",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7ea28ff1-3466-459a-ac0e-a8862428b3d1",
+      "name": "Switch panier",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [
+        -608,
+        3504
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Client: {{ $json.userName }}\\nMessage: {{ $json.userMessage }}\\nchatId: {{ $json.chatId }}\\norderRef: {{ $json.orderRef }}\\nvendorId: {{ $json.vendorId }}\\nprodId: {{ $json.prodId }}\\nprice: {{ $json.price }}\\nproductName: {{ $json.productName }}\\nrouteTo: {{ $json.routeTo }}",
+        "options": {
+          "systemMessage": "Tu es l'assistant de la marketplace Ecom SAS. Accueille chaleureusement les utilisateurs s'ils saluent (ex: bjr, bonjour). Réponds toujours de manière courtoise, en français, ≤80 mots, émojis. Prix en dollars ($).\\n\\nSCHÉMA DB:\\n- vendeurs(id, nom_boutique, cideasypay, tokeneasypay, statut)\\n- categories_vendeur(id, nom, vendeur_id)\\n- produits_vendeur(id, nom, description, prix, taille, categorie_id)\\n- produit_image(id, url_image, produit_id)\\n- commandes(id, chat_id, nom, prenom, telephone, adresse, total, produits, statut, numero_commande, produit_id, vendeur_id)\\n\\nRÈGLES :\\n- Si l'utilisateur salue simplement, présente-toi et invite-le à explorer les boutiques ou à poser ses questions.\\n- Si productName présent → mode commande. Ne cherche pas de produit.\\n- Échappe les guillemets simples ('').\\n- Processus commande : récap, demande nom, prénom, téléphone (10 chiffres), adresse, confirmation OUI, puis appel SQL SELECT cideasypay/tokeneasypay, puis initier_paiement_easypay, puis INSERT INTO commandes, puis réponds avec numéro de commande.\\n\\nOUTILS : execute_sql, initier_paiement_easypay"
+        }
+      },
+      "id": "501e17b1-7bd9-42e3-8b20-2c0d0ffae9b8",
+      "name": "Agent IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -624,
+        3904
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "e9d146e1-0154-4f57-9627-836a2cc9dcc9",
+      "name": "GPT-4o-mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        -864,
+        4240
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "wurRBEXXPomIM2MD",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Normaliser message').item.json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "a42883aa-9ac8-49b7-9853-ad859348f05b",
+      "name": "Memoire session",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -640,
+        4240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('query') }}",
+        "options": {}
+      },
+      "id": "c9035fd8-7aeb-425b-9048-daa957584e6a",
+      "name": "SQL Tool",
+      "type": "n8n-nodes-base.mySqlTool",
+      "typeVersion": 2.5,
+      "position": [
+        -432,
+        4224
+      ],
+      "credentials": {
+        "mySql": {
+          "id": "MUkAJndyHJjTja6C",
+          "name": "bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Initie un paiement Easypay. Arguments : cideasypay, tokeneasypay, montant, client_nom, client_phone, produit_nom, order_ref.",
+        "method": "POST",
+        "url": "=https://mhbeauty.online/api/v1/paiement/initier",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "cideasypay",
+              "value": "={{ $fromAI('cideasypay') }}"
+            },
+            {
+              "name": "tokeneasypay",
+              "value": "={{ $fromAI('tokeneasypay') }}"
+            },
+            {
+              "name": "montant",
+              "value": "={{ $fromAI('montant') }}"
+            },
+            {
+              "name": "client_nom",
+              "value": "={{ $fromAI('client_nom') }}"
+            },
+            {
+              "name": "client_phone",
+              "value": "={{ $fromAI('client_phone') }}"
+            },
+            {
+              "name": "produit_nom",
+              "value": "={{ $fromAI('produit_nom') }}"
+            },
+            {
+              "name": "order_ref",
+              "value": "={{ $fromAI('order_ref') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "454de144-e4cf-491b-9856-883a1ec3fdc3",
+      "name": "Paiement Easypay",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        4208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json.output || '';\nconst nav = $('Router navigation').first().json;\nconst chatId = nav.chatId;\nconst clean = response.replace(/\\{[\\s\\S]*?\\}/g, '').trim();\n\n// Si la réponse contient un numéro de commande (ex: CMD-xxx ou \"commande N°\"), la commande est terminée -> on quitte le mode commande\nconst sd = $getWorkflowStaticData('global');\nif (sd.sessions && sd.sessions[chatId]) {\n  if (/CMD-|commande\\s*(n°|numero|numéro|#)/i.test(response)) {\n    sd.sessions[chatId].enCommande = false;\n  }\n}\n\nreturn [{ json: { chatId, type: 'text', text: clean || 'Je n\\'ai pas compris.', buttons: [{ text: '🏠 Accueil', id: 'HOME' }] } }];"
+      },
+      "id": "4c579b52-ce6a-45c2-bd78-76da58dccc25",
+      "name": "Parse agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        3472
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Adaptateur pour l'API WhatsApp v24.0\nconst input = $input.first().json;\n\n// Récupérer le chatId : d'abord depuis l'entrée, sinon depuis Router navigation\nlet chatId = input.chatId;\nif (!chatId) {\n  try {\n    const nav = $('Router navigation').first().json;\n    chatId = nav.chatId;\n  } catch (e) {\n    chatId = null;\n  }\n}\n\n// Si toujours introuvable, on n'envoie rien (évite le crash sur .replace)\nif (!chatId) {\n  return [];\n}\n\n// Nettoyer le numéro (enlever le '+' si présent)\nconst to = String(chatId).replace(/^\\+/, '');\n\nconst type = input.type;\nconst text = input.text || '';\nconst buttons = input.buttons || [];\nconst sections = input.sections || [];\nconst buttonText = input.buttonText || 'Choisir';\nconst image = input.image || null;\n\nlet payload = {\n  messaging_product: 'whatsapp',\n  to: to,\n  type: 'text'\n};\n\nif (type === 'list') {\n  payload.type = 'interactive';\n  payload.interactive = {\n    type: 'list',\n    header: { type: 'text', text: 'Menu' },\n    body: { text: text },\n    action: {\n      button: buttonText,\n      sections: sections\n    }\n  };\n} else if (type === 'buttons') {\n  payload.type = 'interactive';\n  payload.interactive = {\n    type: 'button',\n    body: { text: text },\n    action: {\n      buttons: buttons.slice(0, 3).map(b => ({\n        type: 'reply',\n        reply: { id: b.id, title: b.title.substring(0, 20) }\n      }))\n    }\n  };\n} else if (type === 'image') {\n  payload.type = 'image';\n  payload.image = image;\n} else if (buttons.length > 0) {\n  // type 'text' avec des boutons -> envoyer comme interactive button (max 3)\n  payload.type = 'interactive';\n  payload.interactive = {\n    type: 'button',\n    body: { text: text },\n    action: {\n      buttons: buttons.slice(0, 3).map(b => ({\n        type: 'reply',\n        reply: { id: b.id, title: (b.title || b.text || '').substring(0, 20) }\n      }))\n    }\n  };\n} else {\n  payload.text = { body: text, preview_url: false };\n}\n\nreturn [{ json: payload }];"
+      },
+      "id": "da998084-fadb-4ca1-861e-c053e71ddf77",
+      "name": "Adapter WhatsApp v24",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        3024
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v24.0/975966998935081/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer EAAZBznZA8hDnABRgyKwRtgzgZB3brCdnF9QrZAZASbBx7kdFsMZBxTn2bS2pnE42gG81jBZBSWmQGxvMoZAqmE6WOIEOHeR5nlSojqR8tAIxNJxnMYa7EhsUmMNX9QouoMDaQ7u6lDc4vI0bvXObI2mblITf2fTZChiTAa0pm2xHNo9X6AEkowhYjwJ5HOGYJbgZDZD"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "bced30c9-9be8-4b4a-afe1-531cf248d2a4",
+      "name": "Send WhatsApp v24",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        3024
+      ]
     }
+  ],
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normaliser message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliser message": {
+      "main": [
+        [
+          {
+            "node": "Router navigation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router navigation": {
+      "main": [
+        [
+          {
+            "node": "Switch route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch route": {
+      "main": [
+        [
+          {
+            "node": "SQL Vendeurs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Categories",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Produits",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SQL Detail produit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gestion panier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gestion panier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gestion panier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gestion panier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Vendeurs": {
+      "main": [
+        [
+          {
+            "node": "Handle vendeurs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Categories": {
+      "main": [
+        [
+          {
+            "node": "Handle categories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Produits": {
+      "main": [
+        [
+          {
+            "node": "Handle produits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Detail produit": {
+      "main": [
+        [
+          {
+            "node": "Handle detail produit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle vendeurs": {
+      "main": [
+        [
+          {
+            "node": "Adapter WhatsApp v24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle categories": {
+      "main": [
+        [
+          {
+            "node": "Adapter WhatsApp v24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle produits": {
+      "main": [
+        [
+          {
+            "node": "Adapter WhatsApp v24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle detail produit": {
+      "main": [
+        [
+          {
+            "node": "Adapter WhatsApp v24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gestion panier": {
+      "main": [
+        [
+          {
+            "node": "Switch panier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch panier": {
+      "main": [
+        [
+          {
+            "node": "Agent IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Adapter WhatsApp v24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent IA": {
+      "main": [
+        [
+          {
+            "node": "Parse agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GPT-4o-mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoire session": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent IA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Paiement Easypay": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse agent": {
+      "main": [
+        [
+          {
+            "node": "Adapter WhatsApp v24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adapter WhatsApp v24": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp v24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "28ba8da7efe41ef60114b1f60ca46803f555a43a3988061843f330213252ba86"
   }
-  return [];
 }
-
-// API générique
-async function api(action, payload = {}) {
-  try {
-    const res = await fetch(N8N_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chatId, action, ...payload })
-    });
-    const data = await res.json();
-    console.log(`[API ${action}] réponse:`, data);
-    return data;
-  } catch(e) {
-    console.error(`[API ${action}] erreur:`, e);
-    return { error: 'Erreur réseau' };
-  }
-}
-
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('hidden', s.id !== id));
-}
-
-function switchAuthTab(tab) {
-  document.getElementById('btn-tab-login').classList.toggle('active', tab==='login');
-  document.getElementById('btn-tab-register').classList.toggle('active', tab==='register');
-  document.getElementById('fs-login').classList.toggle('active', tab==='login');
-  document.getElementById('fs-register').classList.toggle('active', tab==='register');
-}
-
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
-}
-
-async function seConnecter() {
-  const pwd = document.getElementById('login-password').value;
-  if (!pwd) { toast('⚠️ Entrez votre mot de passe'); return; }
-  loader(true);
-  const r = await api('login', { password: pwd });
-  loader(false);
-  if (r && r.success) {
-    toast('✅ Connexion réussie !');
-    await initMainScreen();
-  } else {
-    toast('❌ Mot de passe incorrect');
-  }
-}
-
-async function sInscrire() {
-  const nom = document.getElementById('reg-nom').value.trim();
-  const tel = document.getElementById('reg-tel').value.trim();
-  const adr = document.getElementById('reg-adr').value.trim();
-  const pwd = document.getElementById('reg-password').value;
-  if (!nom || !tel || !adr || !pwd) { toast('⚠️ Veuillez remplir tous les champs obligatoires'); return; }
-  
-  loader(true);
-  const r = await api('register', {
-    nom_boutique: nom,
-    description: document.getElementById('reg-desc').value.trim() || null,
-    telephone: tel,
-    adresse: adr,
-    password: pwd
-  });
-  loader(false);
-  if (r && r.success) {
-    toast('🎉 Compte créé avec succès !');
-    await initMainScreen();
-  } else {
-    toast(r?.error || '⚠️ Échec de la création');
-  }
-}
-
-async function initMainScreen() {
-  showScreen('screen-main');
-  loader(true);
-  await chargerCategories();
-  await chargerProduits();
-  await chargerProfil();
-  loader(false);
-}
-
-async function seDeconnecter() {
-  loader(true);
-  await api('logout');
-  loader(false);
-  profile = null; categories = []; produits = [];
-  document.getElementById('login-password').value = '';
-  showScreen('screen-login');
-  toast('👋 À bientôt !');
-}
-
-// --- PROFIL ---
-async function chargerProfil() {
-  const d = await api('get_profile');
-  if (!d || d.error || !d.nom_boutique) return;
-  profile = d;
-  
-  document.getElementById('topbar-shop').textContent = d.nom_boutique;
-  
-  const statusMap = {
-    'en_attente': { cls:'pending', txt:'⏳ En attente' },
-    'approuvé': { cls:'approved', txt:'✅ Actif' },
-    'approuve': { cls:'approved', txt:'✅ Actif' },
-    'rejeté': { cls:'rejected', txt:'❌ Bloqué' },
-    'rejete': { cls:'rejected', txt:'❌ Bloqué' }
-  };
-  const st = statusMap[(d.statut||'').toLowerCase()] || { cls:'pending', txt:'⏳ En attente' };
-  document.getElementById('topbar-status').innerHTML = `<span class="badge ${st.cls}" style="margin:0; padding:2px 8px; font-size:11px">${st.txt}</span>`;
-  
-  document.getElementById('profil-content').innerHTML = `
-    <div class="profile-hero">
-      <div class="profile-avatar">🏪</div>
-      <div class="profile-name">${escHtml(d.nom_boutique)}</div>
-      <div class="profile-desc">${escHtml(d.description || 'Aucune description enregistrée.')}</div>
-      <span class="badge ${st.cls}">${st.txt}</span>
-    </div>
-    <div class="stats-row">
-      <div class="stat-card"><div class="stat-num">${categories.length}</div><div class="stat-lbl">Catégories</div></div>
-      <div class="stat-card"><div class="stat-num">${produits.length}</div><div class="stat-lbl">Produits Actifs</div></div>
-    </div>
-    <div class="info-grid">
-      <div class="info-cell"><div class="lbl">📞 Téléphone</div><div class="val">${escHtml(d.telephone || '-')}</div></div>
-      <div class="info-cell"><div class="lbl">📍 Adresse</div><div class="val">${escHtml(d.adresse || '-')}</div></div>
-    </div>
-  `;
-}
-
-// --- CATÉGORIES ---
-async function chargerCategories() {
-  const r = await api('list_categories');
-  categories = normalizeArray(r);
-  // S'assurer que chaque catégorie a un champ 'nom'
-  categories = categories.filter(c => c && c.nom).map(c => ({ nom: c.nom }));
-  
-  document.getElementById('cat-count').textContent = categories.length + (categories.length > 1 ? ' catégories' : ' catégorie');
-  
-  const el = document.getElementById('liste-categories');
-  if (!categories.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">Aucune catégorie.<br>Créez-en une avec le bouton +</div></div>`;
-    return;
-  }
-  
-  el.innerHTML = categories.map(c => `
-    <div class="list-item" onclick="viewCategory('${escHtml(c.nom)}')">
-      <div class="item-icon">🗂️</div>
-      <div class="item-info">
-        <div class="item-name">${escHtml(c.nom)}</div>
-        <div class="item-meta">${produits.filter(p => p.categorie_nom === c.nom).length} produit(s)</div>
-      </div>
-      <div class="item-actions" onclick="event.stopPropagation()">
-        <button class="icon-btn edit" onclick="openEditCategory('${escHtml(c.nom)}')">✏️</button>
-        <button class="icon-btn del" onclick="openDeleteCategory('${escHtml(c.nom)}')">🗑️</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function viewCategory(nom) {
-  document.getElementById('modal-title').innerHTML = `🗂️ Détail : ${escHtml(nom)}`;
-  document.getElementById('modal-body').innerHTML = `
-    <div style="padding: 8px 0">
-      <p><strong>Nom :</strong> ${escHtml(nom)}</p>
-      <p><strong>Produits associés :</strong> ${produits.filter(p => p.categorie_nom === nom).length}</p>
-    </div>
-  `;
-  document.getElementById('modal-ok').style.display = 'none';
-  document.getElementById('modal').classList.add('open');
-}
-
-function openAddCategory() {
-  document.getElementById('modal-title').innerHTML = '🗂️ Créer une catégorie';
-  document.getElementById('modal-body').innerHTML = `
-    <div class="field"><label>Nom de la catégorie *</label><input type="text" id="m-cat-nom" placeholder="Ex: Beauté, Électronique"></div>
-  `;
-  document.getElementById('modal-ok').style.display = 'block';
-  document.getElementById('modal-ok').className = 'btn-primary';
-  document.getElementById('modal-ok').textContent = 'Créer';
-  document.getElementById('modal-ok').onclick = async () => {
-    const nom = document.getElementById('m-cat-nom').value.trim();
-    if (!nom) { toast('⚠️ Le nom est requis'); return; }
-    loader(true); closeModal();
-    const r = await api('add_category', { nom });
-    if (r && r.success) { toast('✅ Catégorie créée'); await initMainScreen(); }
-    else { toast(r?.error || '⚠️ Erreur'); loader(false); }
-  };
-  document.getElementById('modal').classList.add('open');
-}
-
-function openEditCategory(oldNom) {
-  document.getElementById('modal-title').innerHTML = '✏️ Éditer la catégorie';
-  document.getElementById('modal-body').innerHTML = `
-    <div class="field"><label>Nouveau nom *</label><input type="text" id="m-cat-nom" value="${escHtml(oldNom)}"></div>
-  `;
-  document.getElementById('modal-ok').style.display = 'block';
-  document.getElementById('modal-ok').className = 'btn-primary';
-  document.getElementById('modal-ok').textContent = 'Renommer';
-  document.getElementById('modal-ok').onclick = async () => {
-    const newNom = document.getElementById('m-cat-nom').value.trim();
-    if (!newNom) { toast('⚠️ Le nom ne peut pas être vide'); return; }
-    loader(true); closeModal();
-    const r = await api('update_category', { oldNom, newNom });
-    if (r && r.success) { toast('✅ Catégorie mise à jour'); await initMainScreen(); }
-    else { toast(r?.error || '⚠️ Erreur'); loader(false); }
-  };
-  document.getElementById('modal').classList.add('open');
-}
-
-function openDeleteCategory(nom) {
-  document.getElementById('modal-title').innerHTML = '🗑️ Supprimer la catégorie';
-  document.getElementById('modal-body').innerHTML = `<p style="color:var(--sub); line-height:1.5">Supprimer la catégorie <strong>${escHtml(nom)}</strong> ? Les produits ne seront pas supprimés.</p>`;
-  document.getElementById('modal-ok').style.display = 'block';
-  document.getElementById('modal-ok').className = 'btn-danger';
-  document.getElementById('modal-ok').textContent = '🗑️ Supprimer';
-  document.getElementById('modal-ok').onclick = async () => {
-    loader(true); closeModal();
-    const r = await api('delete_category', { nom });
-    if (r && r.success) { toast('🗑️ Catégorie supprimée'); await initMainScreen(); }
-    else { toast(r?.error || '⚠️ Erreur'); loader(false); }
-  };
-  document.getElementById('modal').classList.add('open');
-}
-
-// --- PRODUITS ---
-async function chargerProduits() {
-  const r = await api('list_products');
-  produits = normalizeArray(r);
-  // Chaque produit doit avoir nom, prix, description, taille, et on ajoute categorie_nom si possible
-  // Ici on suppose que le backend renvoie la catégorie associée (via jointure)
-  produits = produits.filter(p => p && p.nom);
-  
-  document.getElementById('prod-count').textContent = produits.length + (produits.length > 1 ? ' produits' : ' produit');
-  
-  const el = document.getElementById('liste-produits');
-  if (!produits.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Aucun produit.<br>Appuyez sur + pour ajouter.</div></div>`;
-    return;
-  }
-  
-  el.innerHTML = produits.map(p => `
-    <div class="list-item" onclick="viewProduct('${escHtml(p.nom)}')">
-      <div class="item-icon">📦</div>
-      <div class="item-info">
-        <div class="item-name">${escHtml(p.nom)}</div>
-        <div class="item-meta">
-          <span style="color:var(--accent2); font-weight:700">${parseFloat(p.prix || 0).toFixed(2)} $</span>
-          ${p.taille ? '• ' + escHtml(p.taille) : ''}
-          ${p.categorie_nom ? '• ' + escHtml(p.categorie_nom) : ''}
-        </div>
-      </div>
-      <div class="item-actions" onclick="event.stopPropagation()">
-        <button class="icon-btn edit" onclick="openEditProduct('${escHtml(p.nom)}')">✏️</button>
-        <button class="icon-btn del" onclick="openDeleteProduct('${escHtml(p.nom)}')">🗑️</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-async function viewProduct(nom) {
-  // Récupérer les détails complets (si besoin)
-  const p = produits.find(x => x.nom === nom);
-  if (!p) return;
-  document.getElementById('modal-title').innerHTML = `📦 ${escHtml(p.nom)}`;
-  document.getElementById('modal-body').innerHTML = `
-    <div style="padding: 8px 0">
-      <p><strong>Nom :</strong> ${escHtml(p.nom)}</p>
-      <p><strong>Prix :</strong> ${parseFloat(p.prix || 0).toFixed(2)} $</p>
-      <p><strong>Taille :</strong> ${p.taille ? escHtml(p.taille) : '—'}</p>
-      <p><strong>Catégorie :</strong> ${p.categorie_nom ? escHtml(p.categorie_nom) : 'Non spécifiée'}</p>
-      <p><strong>Description :</strong><br>${p.description ? escHtml(p.description) : 'Aucune'}</p>
-    </div>
-  `;
-  document.getElementById('modal-ok').style.display = 'none';
-  document.getElementById('modal').classList.add('open');
-}
-
-function openAddProduct() {
-  // Préparer la liste des catégories pour le select
-  const catOptions = categories.map(c => `<option value="${escHtml(c.nom)}">${escHtml(c.nom)}</option>`).join('');
-  document.getElementById('modal-title').innerHTML = '📦 Nouveau produit';
-  document.getElementById('modal-body').innerHTML = `
-    <div class="field"><label>Nom *</label><input type="text" id="m-p-nom" placeholder="Nom du produit"></div>
-    <div class="field"><label>Catégorie *</label><select id="m-p-cat">${catOptions || '<option>Aucune catégorie</option>'}</select></div>
-    <div class="field"><label>Prix ($) *</label><input type="number" id="m-p-prix" step="0.01" placeholder="0.00"></div>
-    <div class="field"><label>Taille / Variante</label><input type="text" id="m-p-taille" placeholder="Ex: XL, 250ml"></div>
-    <div class="field"><label>Description</label><textarea id="m-p-desc" placeholder="Description..."></textarea></div>
-  `;
-  document.getElementById('modal-ok').style.display = 'block';
-  document.getElementById('modal-ok').className = 'btn-primary';
-  document.getElementById('modal-ok').textContent = 'Ajouter';
-  document.getElementById('modal-ok').onclick = async () => {
-    const nom = document.getElementById('m-p-nom').value.trim();
-    const cat = document.getElementById('m-p-cat').value;
-    const prix = parseFloat(document.getElementById('m-p-prix').value);
-    if (!nom || !cat || isNaN(prix)) { toast('⚠️ Nom, catégorie et prix requis'); return; }
-    loader(true); closeModal();
-    const r = await api('add_product', {
-      nom,
-      cat,          // le backend attend 'cat' (nom de la catégorie)
-      prix,
-      taille: document.getElementById('m-p-taille').value.trim() || null,
-      desc: document.getElementById('m-p-desc').value.trim() || null
-    });
-    if (r && r.success) { toast('✅ Produit ajouté'); await initMainScreen(); }
-    else { toast(r?.error || '⚠️ Erreur'); loader(false); }
-  };
-  document.getElementById('modal').classList.add('open');
-}
-
-function openEditProduct(oldNom) {
-  const p = produits.find(x => x.nom === oldNom);
-  if (!p) { toast('Produit introuvable'); return; }
-  
-  const catOptions = categories.map(c => `<option value="${escHtml(c.nom)}" ${c.nom === p.categorie_nom ? 'selected' : ''}>${escHtml(c.nom)}</option>`).join('');
-  document.getElementById('modal-title').innerHTML = '✏️ Modifier le produit';
-  document.getElementById('modal-body').innerHTML = `
-    <div class="field"><label>Nom *</label><input type="text" id="m-p-nom" value="${escHtml(p.nom)}"></div>
-    <div class="field"><label>Catégorie *</label><select id="m-p-cat">${catOptions}</select></div>
-    <div class="field"><label>Prix ($) *</label><input type="number" id="m-p-prix" step="0.01" value="${p.prix}"></div>
-    <div class="field"><label>Taille</label><input type="text" id="m-p-taille" value="${escHtml(p.taille||'')}"></div>
-    <div class="field"><label>Description</label><textarea id="m-p-desc">${escHtml(p.description||'')}</textarea></div>
-  `;
-  document.getElementById('modal-ok').style.display = 'block';
-  document.getElementById('modal-ok').className = 'btn-primary';
-  document.getElementById('modal-ok').textContent = 'Enregistrer';
-  document.getElementById('modal-ok').onclick = async () => {
-    const newNom = document.getElementById('m-p-nom').value.trim();
-    const cat = document.getElementById('m-p-cat').value;
-    const prix = parseFloat(document.getElementById('m-p-prix').value);
-    if (!newNom || !cat || isNaN(prix)) { toast('⚠️ Nom, catégorie et prix requis'); return; }
-    loader(true); closeModal();
-    const r = await api('update_product', {
-      oldNom,
-      nom: newNom,
-      cat,          // backend attend 'cat'
-      prix,
-      taille: document.getElementById('m-p-taille').value.trim() || null,
-      desc: document.getElementById('m-p-desc').value.trim() || null
-    });
-    if (r && r.success) { toast('✅ Produit modifié'); await initMainScreen(); }
-    else { toast(r?.error || '⚠️ Erreur'); loader(false); }
-  };
-  document.getElementById('modal').classList.add('open');
-}
-
-function openDeleteProduct(nom) {
-  document.getElementById('modal-title').innerHTML = '🗑️ Supprimer le produit';
-  document.getElementById('modal-body').innerHTML = `<p style="color:var(--sub); line-height:1.5">Supprimer définitivement <strong>${escHtml(nom)}</strong> ?</p>`;
-  document.getElementById('modal-ok').style.display = 'block';
-  document.getElementById('modal-ok').className = 'btn-danger';
-  document.getElementById('modal-ok').textContent = '🗑️ Supprimer';
-  document.getElementById('modal-ok').onclick = async () => {
-    loader(true); closeModal();
-    const r = await api('delete_product', { nom });
-    if (r && r.success) { toast('🗑️ Produit supprimé'); await initMainScreen(); }
-    else { toast(r?.error || '⚠️ Erreur'); loader(false); }
-  };
-  document.getElementById('modal').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('modal').classList.remove('open');
-  // Réinitialiser l'affichage du bouton
-  setTimeout(() => {
-    const btn = document.getElementById('modal-ok');
-    btn.style.display = 'block';
-    btn.className = 'btn-primary';
-    btn.textContent = 'Enregistrer';
-  }, 300);
-}
-
-// Fermeture au clic à l'extérieur
-document.getElementById('modal').addEventListener('click', e => {
-  if (e.target === document.getElementById('modal')) closeModal();
-});
-
-// Démarrage automatique
-(async () => {
-  loader(true);
-  const d = await api('get_profile');
-  loader(false);
-  if (d && !d.error && d.nom_boutique) {
-    await initMainScreen();
-  } else {
-    showScreen('screen-login');
-  }
-})();
-</script>
-</body>
-</html>
